@@ -1,0 +1,54 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isUnderMaxSize(maxMegabytes) {
+      return request.resource.size < maxMegabytes * 1024 * 1024;
+    }
+
+    function isImageOrDoc() {
+      return request.resource.contentType.matches('image/.*') ||
+             request.resource.contentType.matches('application/pdf') ||
+             request.resource.contentType.matches('text/csv');
+    }
+
+    // Public / static assets
+    match /public/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // Laboratory SDS (Safety Data Sheets) and Equipment Manuals
+    match /laboratories/{labId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isUnderMaxSize(25) && isImageOrDoc();
+    }
+
+    // User profile avatars
+    match /users/{userId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && request.auth.uid == userId && isUnderMaxSize(5) && request.resource.contentType.matches('image/.*');
+    }
+
+    // Incident photos and experiment reports
+    match /incidents/{incidentId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isUnderMaxSize(20) && isImageOrDoc();
+    }
+
+    match /experiments/{experimentId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isUnderMaxSize(30) && isImageOrDoc();
+    }
+
+    // Calibration & Maintenance certificates
+    match /certificates/{recordId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isUnderMaxSize(20) && isImageOrDoc();
+    }
+  }
+}
