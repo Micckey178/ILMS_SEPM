@@ -108,8 +108,8 @@ export const LoginPage: React.FC = () => {
               displayName: cred.user.displayName || email.split('@')[0],
               role: 'student',
               organizationId: 'org-main-01',
-              assignedLabs: ['lab-chem-01'],
-              assignedLabId: 'lab-chem-01',
+              assignedLabs: ['lab-atl-01', 'lab-atl-02', 'lab-atl-03', 'lab-sll-01', 'lab-sll-02', 'lab-bfl-01', 'lab-bfl-02', 'lab-bfl-03', 'lab-vin-01', 'lab-cbl-01', 'lab-cbl-02'],
+              assignedLabId: 'lab-atl-01',
               createdAt: new Date().toISOString()
             };
             await DataService.updateUser(fallbackProfile);

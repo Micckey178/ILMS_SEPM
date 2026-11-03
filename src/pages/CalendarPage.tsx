@@ -83,12 +83,8 @@ export const CalendarPage: React.FC = () => {
         setSessions(ss);
         setMaintenances(mn);
 
-        // Default timetable to active lab if set, otherwise ALL
-        if (activeLab?.id) {
-          setSelectedLabId(activeLab.id);
-        } else {
-          setSelectedLabId('ALL');
-        }
+        // Default timetable to ALL so all allotted classes appear immediately
+        setSelectedLabId('ALL');
       } catch (err) {
         console.error('Failed to load schedule events:', err);
       } finally {
@@ -121,7 +117,7 @@ export const CalendarPage: React.FC = () => {
     // Check specific name tokens (e.g. Roopa, Ajay, Suma, Chetana, Manjula, Veena, Anusha, Dhananjaya, Shubha, Prasad, Bindiya, etc.)
     const userWords = userClean
       .split(/\s+/)
-      .filter(w => w.length >= 3 && !['prof', 'prof.', 'dr.', 'mrs.', 'mr.', 'ms.', 'cse'].includes(w));
+      .filter(w => w.length >= 3 && !['prof', 'prof.', 'dr.', 'mrs.', 'mr.', 'ms.', 'cse', 'department', 'faculty', 'lead', 'system'].includes(w));
 
     return userWords.some(w => facClean.includes(w));
   };
@@ -129,14 +125,23 @@ export const CalendarPage: React.FC = () => {
   // Check if student is allotted to a given laboratory
   const isStudentAllotted = (labId: string): boolean => {
     if (!isStudent) return true;
-    if (!currentUser.assignedLabs || currentUser.assignedLabs.length === 0) return false;
+    if (!currentUser.assignedLabs || currentUser.assignedLabs.length === 0) {
+      if (currentUser.assignedLabId) return currentUser.assignedLabId === labId;
+      return true;
+    }
     return currentUser.assignedLabs.includes(labId);
   };
 
   // Student allotted labs list
   const studentAllottedLabs = useMemo(() => {
-    if (!isStudent || !currentUser.assignedLabs) return laboratories;
-    return laboratories.filter(l => currentUser.assignedLabs.includes(l.id));
+    if (!isStudent) return laboratories;
+    if (currentUser?.assignedLabs && currentUser.assignedLabs.length > 0) {
+      return laboratories.filter(l => currentUser.assignedLabs.includes(l.id));
+    }
+    if (currentUser?.assignedLabId) {
+      return laboratories.filter(l => l.id === currentUser.assignedLabId);
+    }
+    return laboratories;
   }, [isStudent, currentUser, laboratories]);
 
   // Selected laboratory object
@@ -318,7 +323,7 @@ export const CalendarPage: React.FC = () => {
         selectedLabId === 'ALL' || evt.laboratoryId === selectedLabId;
 
       const matchesDay =
-        selectedDay === 'ALL' || evt.dayOfWeek?.toLowerCase() === selectedDay.toLowerCase();
+        viewMode === 'month' || selectedDay === 'ALL' || evt.dayOfWeek?.toLowerCase() === selectedDay.toLowerCase();
 
       const matchesFaculty =
         selectedFaculty === 'ALL' || evt.user.toLowerCase().includes(selectedFaculty.toLowerCase());
@@ -328,7 +333,7 @@ export const CalendarPage: React.FC = () => {
 
       return matchesSearch && matchesLab && matchesDay && matchesFaculty && matchesStatus;
     });
-  }, [allEvents, searchQuery, selectedLabId, selectedDay, selectedFaculty, selectedStatus]);
+  }, [allEvents, searchQuery, selectedLabId, selectedDay, selectedFaculty, selectedStatus, viewMode]);
 
   // Sessions filtered for the Timetable Noticeboard grid & Directory
   // Enforces student allotment and faculty teaching filter
@@ -401,6 +406,9 @@ export const CalendarPage: React.FC = () => {
   const month = currentDate.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDayIndex = new Date(year, month, 1).getDay();
+  const daysInPrevMonth = new Date(year, month, 0).getDate();
+  const totalGridCells = Math.ceil((firstDayIndex + daysInMonth) / 7) * 7;
+  const trailingEmptyCount = totalGridCells - (firstDayIndex + daysInMonth);
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -1253,12 +1261,23 @@ export const CalendarPage: React.FC = () => {
               ))}
             </div>
 
-            {/* Month Cells */}
-            <div className="grid grid-cols-7 auto-rows-fr divide-x divide-y divide-[#E9DDF1]">
-              {Array.from({ length: firstDayIndex }).map((_, i) => (
-                <div key={`empty-${i}`} className="min-h-[120px] bg-[#FFF8F2]/30 p-2" />
-              ))}
+            {/* Month Cells: Seamless 1px grid using gap-px with clean border */}
+            <div className="grid grid-cols-7 gap-px bg-[#E9DDF1]">
+              {/* Previous Month Leading Days */}
+              {Array.from({ length: firstDayIndex }).map((_, i) => {
+                const prevDayNum = daysInPrevMonth - firstDayIndex + i + 1;
+                return (
+                  <div
+                    key={`prev-${i}`}
+                    className="min-h-[120px] bg-[#FFF8F2]/30 p-2 flex flex-col justify-between opacity-40 select-none"
+                  >
+                    <span className="text-xs font-bold text-[#71667D]">{prevDayNum}</span>
+                    <span className="text-[10px] text-[#71667D]/60 italic font-mono">Previous Month</span>
+                  </div>
+                );
+              })}
 
+              {/* Current Month Active Days */}
               {Array.from({ length: daysInMonth }).map((_, i) => {
                 const dayNum = i + 1;
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
@@ -1271,7 +1290,7 @@ export const CalendarPage: React.FC = () => {
                 return (
                   <div
                     key={dayNum}
-                    className={`min-h-[130px] p-2 flex flex-col justify-between transition group hover:bg-[#F0E9FF]/30 ${
+                    className={`min-h-[130px] p-2 flex flex-col justify-between transition group bg-white hover:bg-[#F0E9FF]/30 ${
                       isToday ? 'bg-[#FBE5EF]/40' : ''
                     }`}
                   >
@@ -1293,7 +1312,7 @@ export const CalendarPage: React.FC = () => {
                     </div>
 
                     {/* Day Events Preview */}
-                    <div className="space-y-1.5 my-1.5 flex-1 overflow-y-auto max-h-[90px]">
+                    <div className="space-y-1.5 my-1.5 flex-1 overflow-y-auto max-h-[90px] no-scrollbar">
                       {dayEvents.map(evt => (
                         <div
                           key={evt.id}
@@ -1301,7 +1320,10 @@ export const CalendarPage: React.FC = () => {
                           className="p-1.5 rounded-lg border text-[11px] font-semibold cursor-pointer truncate transition hover:scale-[1.02] shadow-xs bg-[#F0E9FF] border-[#BCA0F5]/50 text-[#8961D8]"
                         >
                           <div className="flex items-center space-x-1 truncate">
-                            <span className="font-extrabold">{evt.startTime}</span>
+                            <span className="text-[9px] font-black uppercase px-1 py-0.5 rounded bg-[#8961D8]/10 text-[#8961D8] shrink-0">
+                              {evt.labCode || 'LAB'}
+                            </span>
+                            <span className="font-extrabold shrink-0">{evt.startTime}</span>
                             <span className="truncate">{evt.title}</span>
                           </div>
                         </div>
@@ -1311,6 +1333,20 @@ export const CalendarPage: React.FC = () => {
                     <div className="text-[9px] text-[#71667D] opacity-0 group-hover:opacity-100 transition">
                       Click to inspect
                     </div>
+                  </div>
+                );
+              })}
+
+              {/* Next Month Trailing Days (Pads grid so all 7 columns in every row are complete) */}
+              {Array.from({ length: trailingEmptyCount }).map((_, i) => {
+                const nextMonthDayNum = i + 1;
+                return (
+                  <div
+                    key={`trailing-${i}`}
+                    className="min-h-[120px] bg-[#FFF8F2]/30 p-2 flex flex-col justify-between opacity-40 select-none"
+                  >
+                    <span className="text-xs font-bold text-[#71667D]">{nextMonthDayNum}</span>
+                    <span className="text-[10px] text-[#71667D]/60 italic font-mono">Next Month</span>
                   </div>
                 );
               })}
