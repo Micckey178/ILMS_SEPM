@@ -9,12 +9,14 @@ import {
   AlertCircle,
   Filter,
   Search,
-  Calendar
+  Calendar,
+  Building2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { DataService } from '../services/dataService';
 import { EquipmentBooking } from '../types';
 import { BookingModal } from '../components/BookingModal';
+import { FacultyLabBookingModal } from '../components/FacultyLabBookingModal';
 
 export const BookingsPage: React.FC = () => {
   const { activeLab, currentUser, can } = useAuth();
@@ -22,6 +24,7 @@ export const BookingsPage: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFacultyModalOpen, setIsFacultyModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const loadBookings = async () => {
@@ -65,46 +68,56 @@ export const BookingsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header with High-Contrast Typography & Faculty Lab Booking */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white flex items-center space-x-2">
-            <CalendarCheck className="w-5 h-5 text-emerald-400" />
-            <span>Equipment Booking & Laboratory Scheduling</span>
-          </h2>
-          <p className="text-xs text-slate-400">
-            {activeLab ? `${activeLab.name} (${activeLab.code})` : 'All Laboratories'} • Concurrency-safe reservations
+          <h1 className="text-2xl sm:text-3xl font-black text-[#172033] dark:text-white flex items-center space-x-2.5">
+            <CalendarCheck className="w-7 h-7 text-[#18BDF5]" />
+            <span>Faculty Lab Booking & Equipment Scheduling</span>
+          </h1>
+          <p className="text-xs sm:text-sm text-[#4A5568] dark:text-[#B8C7DF] font-medium mt-1">
+            {activeLab ? `${activeLab.name} (${activeLab.code})` : 'All University Facilities'} • Concurrency-safe reservations & capacity validation
           </p>
         </div>
 
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold flex items-center space-x-1.5 shadow-lg shadow-emerald-600/20 transition"
-        >
-          <Plus className="w-4 h-4" />
-          <span>New Reservation</span>
-        </button>
+        <div className="flex items-center space-x-2.5">
+          <button
+            onClick={() => setIsFacultyModalOpen(true)}
+            className="px-4 py-2.5 bg-white hover:bg-cyan-50 text-[#172033] border-2 border-cyan-400 rounded-2xl text-xs font-black flex items-center space-x-2 shadow-sm transition hover:shadow-md"
+          >
+            <Building2 className="w-4 h-4 text-cyan-700 shrink-0" />
+            <span className="text-[#172033] font-black tracking-tight">Faculty Lab Booking</span>
+          </button>
+
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-4 py-2.5 bg-[#18BDF5] hover:bg-[#38BDF8] text-[#172033] rounded-2xl text-xs font-black flex items-center space-x-1.5 shadow-md transition"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Reserve Equipment</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter and Search */}
-      <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl flex flex-col md:flex-row items-center gap-3">
+      <div className="p-4 bg-white border border-[#E4E7F0] rounded-3xl shadow-soft flex flex-col md:flex-row items-center gap-3">
         <div className="relative flex-1 w-full">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-[#5B6478] absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Search by equipment, researcher name, or experiment purpose..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full bg-[#F5F6FC] border border-[#E4E7F0] rounded-2xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-[#172033] placeholder-[#5B6478] focus:outline-none focus:border-[#18BDF5]"
           />
         </div>
 
         <div className="flex items-center space-x-2 w-full md:w-auto">
-          <Filter className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+          <Filter className="w-4 h-4 text-[#5B6478] shrink-0" />
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="bg-[#F5F6FC] border border-[#E4E7F0] rounded-2xl px-3 py-2.5 text-xs sm:text-sm text-[#172033] font-medium focus:outline-none focus:border-[#18BDF5]"
           >
             <option value="ALL">All Statuses</option>
             <option value="CONFIRMED">Confirmed</option>
@@ -116,10 +129,10 @@ export const BookingsPage: React.FC = () => {
       </div>
 
       {/* Bookings List */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
-        <div className="divide-y divide-slate-800/70">
+      <div className="bg-white border border-[#E4E7F0] rounded-3xl overflow-hidden shadow-card">
+        <div className="divide-y divide-[#E4E7F0]">
           {filteredBookings.length === 0 ? (
-            <div className="p-8 text-center text-slate-500 text-xs">
+            <div className="p-8 text-center text-[#5B6478] text-sm">
               No equipment reservations found matching your filters.
             </div>
           ) : (
@@ -130,40 +143,40 @@ export const BookingsPage: React.FC = () => {
               const canApprove = can('approve_booking');
 
               return (
-                <div key={b.id} className="p-4 hover:bg-slate-850/40 transition flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="space-y-1.5">
+                <div key={b.id} className="p-5 hover:bg-[#F5F6FC]/60 transition flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="space-y-2">
                     <div className="flex items-center space-x-2.5">
-                      <span className="font-bold text-sm text-slate-100">{b.equipmentName}</span>
+                      <span className="font-extrabold text-base text-[#172033]">{b.equipmentName}</span>
                       <span
-                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                        className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
                           b.status === 'CONFIRMED'
-                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                             : b.status === 'PENDING'
-                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-                            : 'bg-slate-800 text-slate-400 border-slate-700'
+                            ? 'bg-amber-50 text-amber-800 border-amber-200'
+                            : 'bg-[#F5F6FC] text-[#5B6478] border-[#E4E7F0]'
                         }`}
                       >
                         {b.status}
                       </span>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
-                      <span className="flex items-center space-x-1 text-sky-400 font-mono">
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-[#5B6478]">
+                      <span className="flex items-center space-x-1 text-cyan-700 font-mono font-medium">
                         <Calendar className="w-3.5 h-3.5" />
                         <span>{start.toLocaleDateString()}</span>
                       </span>
                       <span className="flex items-center space-x-1 font-mono">
-                        <Clock className="w-3.5 h-3.5 text-slate-500" />
+                        <Clock className="w-3.5 h-3.5 text-[#5B6478]" />
                         <span>{start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       </span>
-                      <span className="flex items-center space-x-1 text-slate-300">
-                        <User className="w-3.5 h-3.5 text-slate-500" />
+                      <span className="flex items-center space-x-1 text-[#172033] font-medium">
+                        <User className="w-3.5 h-3.5 text-[#5B6478]" />
                         <span>{b.userName}</span>
                       </span>
                     </div>
 
-                    <p className="text-xs text-slate-300 italic">
-                      "{b.purpose}" {b.projectOrExperiment && <span className="text-slate-400 font-normal">[{b.projectOrExperiment}]</span>}
+                    <p className="text-xs text-[#5B6478] italic">
+                      "{b.purpose}" {b.projectOrExperiment && <span className="text-[#172033] font-normal not-italic ml-1">[{b.projectOrExperiment}]</span>}
                     </p>
                   </div>
 
@@ -173,7 +186,7 @@ export const BookingsPage: React.FC = () => {
                       <>
                         <button
                           onClick={() => handleUpdateStatus(b.id, 'CONFIRMED')}
-                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold flex items-center space-x-1 transition"
+                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center space-x-1 transition shadow-sm"
                         >
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span>Approve</span>
@@ -183,7 +196,7 @@ export const BookingsPage: React.FC = () => {
                             const reason = prompt('Reason for rejection:');
                             if (reason) handleUpdateStatus(b.id, 'REJECTED', reason);
                           }}
-                          className="px-3 py-1.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 rounded-lg text-xs font-semibold flex items-center space-x-1 transition"
+                          className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold flex items-center space-x-1 transition"
                         >
                           <XCircle className="w-3.5 h-3.5" />
                           <span>Reject</span>
@@ -198,7 +211,7 @@ export const BookingsPage: React.FC = () => {
                             handleUpdateStatus(b.id, 'CANCELLED');
                           }
                         }}
-                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-750 text-slate-300 border border-slate-700 rounded-lg text-xs font-medium transition"
+                        className="px-3 py-1.5 bg-[#F5F6FC] hover:bg-slate-100 text-[#5B6478] hover:text-[#172033] border border-[#E4E7F0] rounded-xl text-xs font-bold transition"
                       >
                         Cancel Slot
                       </button>
@@ -214,6 +227,12 @@ export const BookingsPage: React.FC = () => {
       <BookingModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        onSuccess={loadBookings}
+      />
+
+      <FacultyLabBookingModal
+        isOpen={isFacultyModalOpen}
+        onClose={() => setIsFacultyModalOpen(false)}
         onSuccess={loadBookings}
       />
     </div>

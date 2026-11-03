@@ -56,21 +56,28 @@ export const IssueReturnPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 sm:p-8 bg-white border border-[#E4E7F0] rounded-3xl text-[#172033] shadow-card">
         <div>
-          <h2 className="text-xl font-bold text-white flex items-center space-x-2">
-            <ArrowRightLeft className="w-5 h-5 text-sky-400" />
-            <span>Equipment Issue & Return Management</span>
-          </h2>
-          <p className="text-xs text-slate-400">
-            {activeLab ? `${activeLab.name} (${activeLab.code})` : 'All Laboratories'} • Loan tracking and inspection sign-offs
+          <div className="flex items-center space-x-2">
+            <span className="px-3 py-1 rounded-full bg-cyan-50 text-cyan-800 border border-cyan-200 font-mono text-xs uppercase font-extrabold tracking-wider">
+              Asset Custody & Circulation
+            </span>
+            <span className="text-[#5B6478] text-xs font-semibold">
+              {activeLab ? `${activeLab.name} (${activeLab.code})` : 'All Laboratories'} • Loan tracking and inspection sign-offs
+            </span>
+          </div>
+          <h1 className="font-heading font-black text-2xl sm:text-4xl text-[#172033] mt-2">
+            Equipment Issue & Return Management
+          </h1>
+          <p className="text-sm sm:text-base text-[#5B6478] mt-1 max-w-xl">
+            Streamlined custody logging for borrowed student instruments, physical condition check-ins, and automated overdue alerts.
           </p>
         </div>
 
         {can('issue_return_items') && (
           <button
             onClick={() => setIsIssueModalOpen(true)}
-            className="px-3.5 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs font-semibold flex items-center space-x-1.5 shadow-lg shadow-sky-600/20 transition"
+            className="px-5 py-3 bg-[#18BDF5] hover:bg-[#38BDF8] text-[#172033] rounded-2xl text-xs sm:text-sm font-extrabold flex items-center space-x-2 shadow-md transition self-start md:self-auto"
           >
             <Plus className="w-4 h-4" />
             <span>Issue Item to Borrower</span>
@@ -79,24 +86,24 @@ export const IssueReturnPage: React.FC = () => {
       </div>
 
       {/* Filter and Search */}
-      <div className="p-3 bg-slate-900 border border-slate-800 rounded-xl flex flex-col md:flex-row items-center gap-3">
+      <div className="p-4 bg-white border border-[#E4E7F0] rounded-3xl shadow-card flex flex-col md:flex-row items-center gap-3">
         <div className="relative flex-1 w-full">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-[#5B6478] absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Search by equipment/item name, borrower, or email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
+            className="w-full bg-[#F5F6FC] border border-[#E4E7F0] rounded-2xl pl-10 pr-4 py-2 text-xs text-[#172033] placeholder-[#5B6478] focus:outline-none focus:border-[#18BDF5]"
           />
         </div>
 
         <div className="flex items-center space-x-2 w-full md:w-auto">
-          <Filter className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+          <Filter className="w-3.5 h-3.5 text-[#5B6478] shrink-0" />
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500"
+            className="bg-[#F5F6FC] border border-[#E4E7F0] rounded-2xl px-3 py-2 text-xs text-[#172033] font-semibold focus:outline-none focus:border-[#18BDF5]"
           >
             <option value="ALL">All Transactions</option>
             <option value="ISSUED">Active Loans (Issued)</option>
@@ -108,24 +115,24 @@ export const IssueReturnPage: React.FC = () => {
       </div>
 
       {/* Transactions Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
+      <div className="bg-white border border-[#E4E7F0] rounded-3xl overflow-hidden shadow-card">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="border-b border-slate-800 bg-slate-800/50 text-slate-400 uppercase tracking-wider text-[10px]">
-                <th className="py-3 px-4">Item & Quantity</th>
-                <th className="py-3 px-3">Borrower</th>
-                <th className="py-3 px-3">Issue Date</th>
-                <th className="py-3 px-3">Expected Return</th>
-                <th className="py-3 px-3">Condition</th>
-                <th className="py-3 px-3">Status</th>
-                <th className="py-3 px-4 text-center">Actions</th>
+              <tr className="border-b border-[#E4E7F0] bg-[#F5F6FC] text-[#5B6478] uppercase tracking-wider text-[10px] font-bold">
+                <th className="py-3.5 px-5">Item & Quantity</th>
+                <th className="py-3.5 px-4">Borrower</th>
+                <th className="py-3.5 px-4">Issue Date</th>
+                <th className="py-3.5 px-4">Expected Return</th>
+                <th className="py-3.5 px-4">Condition</th>
+                <th className="py-3.5 px-4">Status</th>
+                <th className="py-3.5 px-5 text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody className="divide-y divide-[#E4E7F0]">
               {filteredTransactions.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-500 text-xs">
+                  <td colSpan={7} className="py-12 text-center text-[#5B6478] text-xs">
                     No issue/return loan records found.
                   </td>
                 </tr>
@@ -135,64 +142,64 @@ export const IssueReturnPage: React.FC = () => {
                   const canReturn = can('issue_return_items') && (tx.status === 'ISSUED' || tx.status === 'OVERDUE');
 
                   return (
-                    <tr key={tx.id} className="hover:bg-slate-800/40 transition">
-                      <td className="py-3 px-4">
-                        <div className="font-semibold text-slate-100">{tx.itemName}</div>
-                        <div className="text-[11px] text-slate-400">
-                          Qty: <strong className="text-sky-300 font-mono">{tx.quantity}</strong>
+                    <tr key={tx.id} className="hover:bg-[#F5F6FC]/60 transition">
+                      <td className="py-3.5 px-5">
+                        <div className="font-bold text-sm text-[#172033]">{tx.itemName}</div>
+                        <div className="text-[11px] text-[#5B6478] mt-0.5">
+                          Qty: <strong className="text-cyan-800 font-mono font-bold">{tx.quantity}</strong>
                         </div>
                       </td>
-                      <td className="py-3 px-3">
-                        <div className="font-medium text-slate-200">{tx.borrowerName}</div>
-                        <div className="text-[10px] text-slate-500">{tx.borrowerEmail}</div>
+                      <td className="py-3.5 px-4">
+                        <div className="font-bold text-sm text-[#172033]">{tx.borrowerName}</div>
+                        <div className="text-[10px] text-[#5B6478]">{tx.borrowerEmail}</div>
                       </td>
-                      <td className="py-3 px-3 font-mono text-[11px] text-slate-400">
+                      <td className="py-3.5 px-4 font-mono text-[11px] text-[#5B6478]">
                         {new Date(tx.issueDate).toLocaleDateString()}
                       </td>
-                      <td className="py-3 px-3 font-mono text-[11px]">
-                        <span className={isOverdue ? 'text-rose-400 font-bold' : 'text-slate-300'}>
+                      <td className="py-3.5 px-4 font-mono text-[11px]">
+                        <span className={isOverdue ? 'text-rose-600 font-bold' : 'text-[#172033]'}>
                           {new Date(tx.expectedReturnDate).toLocaleDateString()}
                         </span>
                       </td>
-                      <td className="py-3 px-3">
-                        <div className="text-[11px] text-slate-300">
-                          Before: <span className="text-emerald-400 font-medium">{tx.conditionBeforeIssue}</span>
+                      <td className="py-3.5 px-4">
+                        <div className="text-[11px] text-[#5B6478]">
+                          Before: <span className="text-emerald-700 font-semibold">{tx.conditionBeforeIssue}</span>
                         </div>
                         {tx.conditionAfterReturn && (
-                          <div className="text-[10px] text-slate-400">
-                            After: <span className="font-medium text-amber-300">{tx.conditionAfterReturn}</span>
+                          <div className="text-[10px] text-[#5B6478]">
+                            After: <span className="font-semibold text-amber-700">{tx.conditionAfterReturn}</span>
                           </div>
                         )}
                       </td>
-                      <td className="py-3 px-3">
+                      <td className="py-3.5 px-4">
                         {isOverdue ? (
-                          <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[10px] font-semibold">
+                          <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-800 border border-rose-200 text-[10px] font-bold">
                             <AlertTriangle className="w-3 h-3" />
                             <span>Overdue</span>
                           </span>
                         ) : tx.status === 'RETURNED' ? (
-                          <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-semibold">
+                          <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold">
                             <CheckCircle2 className="w-3 h-3" />
                             <span>Returned</span>
                           </span>
                         ) : (
-                          <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30 text-[10px] font-semibold">
+                          <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-800 border border-sky-200 text-[10px] font-bold">
                             <Clock className="w-3 h-3" />
                             <span>Active Loan</span>
                           </span>
                         )}
                       </td>
-                      <td className="py-3 px-4 text-center">
+                      <td className="py-3.5 px-5 text-center">
                         {canReturn ? (
                           <button
                             onClick={() => setSelectedTxForReturn(tx)}
-                            className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold flex items-center space-x-1 mx-auto transition"
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center space-x-1 mx-auto transition shadow-sm"
                           >
                             <ShieldCheck className="w-3.5 h-3.5" />
                             <span>Inspect & Return</span>
                           </button>
                         ) : (
-                          <span className="text-[10px] text-slate-500 italic">Signed Off</span>
+                          <span className="text-[10px] text-[#5B6478] font-bold uppercase tracking-wider">Signed Off</span>
                         )}
                       </td>
                     </tr>

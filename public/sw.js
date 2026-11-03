@@ -1,9 +1,11 @@
-const CACHE_NAME = 'ilms-pwa-v1';
+const CACHE_NAME = 'ilms-pwa-v2';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
   '/offline.html',
+  '/pwa-192x192.png',
+  '/pwa-512x512.png',
   '/pwa-192x192.svg',
   '/pwa-512x512.svg'
 ];

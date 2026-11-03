@@ -253,4 +253,78 @@ describe('ILMS Multi-Laboratory Business Workflows & Data Integrity', () => {
     expect(metrics.categoryChartData.length).toBeGreaterThan(0);
     expect(metrics.equipmentStatusChartData.length).toBeGreaterThan(0);
   });
+
+  // 10. Faculty Attendance Recording & Authorized Correction
+  it('10. Faculty can record attendance and submit authorized correction', async () => {
+    const record = await DataService.createAttendanceRecord({
+      laboratoryId: 'lab-chem-01',
+      laboratoryName: 'General Chemistry Lab',
+      sessionTitle: 'Organic Synthesis Lab A',
+      courseCode: 'CHEM-301',
+      classBatch: 'CHEM-3A (Year 3)',
+      date: '2026-10-30',
+      facultyId: 'usr-fac-01',
+      facultyName: 'Dr. Evelyn Reed',
+      students: [
+        { studentId: 'std-1', studentName: 'Alice Walker', status: 'PRESENT' },
+        { studentId: 'std-2', studentName: 'Bob Vance', status: 'ABSENT' }
+      ],
+      totalStudents: 2,
+      presentCount: 1,
+      absentCount: 1,
+      lateCount: 0,
+      excusedCount: 0,
+      attendancePercentage: 50
+    }, managerUser);
+
+    expect(record.id).toBeDefined();
+    expect(record.attendancePercentage).toBe(50);
+
+    // Correct Bob Vance from ABSENT to EXCUSED
+    await DataService.correctAttendance(record.id, 'std-2', 'EXCUSED', 'Medical certificate approved', managerUser);
+
+    const updated = (await DataService.getAttendanceRecords('lab-chem-01')).find(r => r.id === record.id);
+    expect(updated?.corrections?.length).toBe(1);
+    expect(updated?.corrections?.[0].newStatus).toBe('EXCUSED');
+  });
+
+  // 11. User Registration & Admin Approval
+  it('11. Safe user registration creates pending student, admin approves role', async () => {
+    const newUser = await DataService.registerNewAccount({
+      displayName: 'New Scholar',
+      email: 'scholar.new@mit.edu',
+      departmentId: 'dept-chem',
+      institution: 'Metropolitan Institute'
+    });
+
+    expect(newUser.role).toBe('student');
+    expect(newUser.status).toBe('pending');
+
+    // Admin approves account and assigns labManager role
+    await DataService.approveUser(newUser.id, 'labManager', ['lab-chem-01'], adminUser);
+
+    const approvedUser = await DataService.getCurrentUser(newUser.id);
+    expect(approvedUser?.role).toBe('labManager');
+    expect(approvedUser?.status).toBe('active');
+  });
+
+  // 12. Certified Vendor Audit Verification
+  it('12. Only administrators can verify institutional vendors', async () => {
+    const vendors = await DataService.getVendors();
+    expect(vendors.length).toBeGreaterThan(0);
+    const targetVendor = vendors[0];
+
+    // Non-admin cannot verify
+    await expect(
+      DataService.verifyVendor(targetVendor.id, 'ISO-9001:2015 Cert #9982', '2029-01-01', studentUser)
+    ).rejects.toThrow(/security violation|unauthorized/i);
+
+    // Admin verifies successfully
+    await DataService.verifyVendor(targetVendor.id, 'ISO-9001:2015 Cert #9982', '2029-01-01', adminUser);
+
+    const verifiedList = await DataService.getVendors();
+    const verified = verifiedList.find(v => v.id === targetVendor.id);
+    expect(verified?.verificationStatus).toBe('VERIFIED');
+    expect(verified?.certificationDetails).toBe('ISO-9001:2015 Cert #9982');
+  });
 });

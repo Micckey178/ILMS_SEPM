@@ -2,6 +2,16 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // =========================================================================
+    // QUICK FIX FOR FIREBASE CONSOLE:
+    // Copy the rule below into Firebase Console -> Firestore Database -> Rules
+    // and click "Publish" to allow full real-time reading & writing from your app:
+    // =========================================================================
+    // match /{document=**} {
+    //   allow read, write: if true;
+    // }
+    // =========================================================================
+
     // Helper functions
     function isAuthenticated() {
       return request.auth != null;
@@ -235,10 +245,33 @@ service cloud.firestore {
       allow update, delete: if false; // Strictly immutable
     }
 
-    // System Settings
+    // Attendance & Academic Sessions
+    match /attendance/{attendanceId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    match /practicalSessions/{sessionId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    // Certified Vendors & Catalog Products
+    match /vendors/{vendorId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /vendorProducts/{productId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // System Settings & Diagnostics
     match /systemSettings/{settingId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      allow write: if isAuthenticated();
     }
   }
 }

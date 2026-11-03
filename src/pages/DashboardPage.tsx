@@ -1,291 +1,311 @@
-import React, { useEffect, useState } from 'react';
-import {
-  Boxes,
-  Cpu,
-  CalendarCheck,
-  AlertTriangle,
-  ArrowRightLeft,
-  DollarSign,
-  TrendingUp,
-  ShieldAlert,
-  ArrowUpRight,
-  Clock,
-  Sparkles,
-  QrCode
-} from 'lucide-react';
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  PieChart,
-  Pie,
-  Cell,
-  Legend
-} from 'recharts';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { DataService } from '../services/dataService';
-import { AuditLogEntry, UniversalInventoryItem } from '../types';
+import { AdminDashboard } from './dashboards/AdminDashboard';
+import { LabManagerDashboard } from './dashboards/LabManagerDashboard';
+import { FacultyDashboard } from './dashboards/FacultyDashboard';
+import { TechnicianDashboard } from './dashboards/TechnicianDashboard';
+import { StudentDashboard } from './dashboards/StudentDashboard';
+import { LiveResourceAvailabilityModal } from '../components/LiveResourceAvailabilityModal';
+import { FaultReportingModal } from '../components/FaultReportingModal';
+import {
+  Building2,
+  Boxes,
+  CalendarCheck,
+  UserCheck,
+  Wrench,
+  ShoppingCart,
+  ShieldAlert,
+  FileSpreadsheet,
+  ArrowRight,
+  Sparkles,
+  QrCode,
+  LayoutGrid,
+  Activity,
+  Layers,
+  Calendar
+} from 'lucide-react';
+import { localStore } from '../services/dataService';
 
 interface DashboardPageProps {
   onOpenQRScanner: () => void;
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onOpenQRScanner }) => {
-  const { activeLab, currentUser } = useAuth();
-  const [metrics, setMetrics] = useState<any>(null);
-  const [recentAudits, setRecentAudits] = useState<AuditLogEntry[]>([]);
-  const [lowStockItems, setLowStockItems] = useState<UniversalInventoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { currentUser, activeLab } = useAuth();
+  const navigate = useNavigate();
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const data = await DataService.getDashboardMetrics(activeLab?.id);
-      const audits = await DataService.getAuditLogs(activeLab?.id);
-      const inv = await DataService.getInventory(activeLab?.id);
+  const [activeTab, setActiveTab] = useState<'workspace' | 'modules'>('workspace');
+  const [isLiveMatrixOpen, setIsLiveMatrixOpen] = useState(false);
+  const [isFaultReportOpen, setIsFaultReportOpen] = useState(false);
 
-      setMetrics(data);
-      setRecentAudits(audits.slice(0, 5));
-      setLowStockItems(inv.filter(i => i.isLowStock || i.quantity <= i.minStock));
-    } catch (err) {
-      console.error('Dashboard data load failed:', err);
-    } finally {
-      setLoading(false);
+  // Live counts
+  const inventoryCount = localStore.getInventory().length;
+  const equipmentCount = localStore.getEquipment().length;
+  const bookingsCount = localStore.getBookings().length;
+
+  const practicalSessionsCount = localStore.getPracticalSessions().length;
+
+  const lunaModules = [
+    {
+      id: 'timetable',
+      title: 'Department Timetables',
+      desc: 'Official Odd Sem 2026-27 timetables across 11 CSE labs. Track who is taking which class at what time.',
+      status: `11 Labs • ${practicalSessionsCount} Scheduled Batches`,
+      badge: 'Official Timetable',
+      icon: Calendar,
+      path: '/schedule',
+      accent: 'border-[#BCA0F5] bg-[#F0E9FF] text-[#8961D8]'
+    },
+    {
+      id: 'lab',
+      title: 'My Laboratory',
+      desc: 'Active academic lab, workstation availability, room details, and floor capacity.',
+      status: `${activeLab?.code || 'FAC-01'} • ${activeLab?.name || 'General Facility'}`,
+      badge: 'Active Workspace',
+      icon: Building2,
+      path: '/laboratories',
+      accent: 'border-[#BCA0F5] bg-[#F0E9FF] text-[#8961D8]'
+    },
+    {
+      id: 'inventory',
+      title: 'Inventory & Equipment',
+      desc: 'Reagents, hazardous chemical stocks, precision instruments, and batch expiry tracking.',
+      status: `${inventoryCount} Reagents • ${equipmentCount} Assets`,
+      badge: 'Real-Time Sync',
+      icon: Boxes,
+      path: '/inventory',
+      accent: 'border-[#FFD2BF] bg-[#FFF8F2] text-[#8961D8]'
+    },
+    {
+      id: 'bookings',
+      title: 'Laboratory Bookings',
+      desc: 'Conflict-free bench scheduling, apparatus slots, and real-time reservations.',
+      status: `${bookingsCount} Active Reservations`,
+      badge: 'Instant Concurrency',
+      icon: CalendarCheck,
+      path: '/bookings',
+      accent: 'border-[#E9DDF1] bg-[#FBE5EF] text-[#8961D8]'
+    },
+    {
+      id: 'attendance',
+      title: 'Faculty Attendance',
+      desc: 'Student cohort participation, practical batch verification, and syllabus hours.',
+      status: 'Live Biometric & Practical Logs',
+      badge: 'Accreditation Ready',
+      icon: UserCheck,
+      path: '/attendance',
+      accent: 'border-[#BCA0F5] bg-[#F0E9FF] text-[#8961D8]'
+    },
+    {
+      id: 'maintenance',
+      title: 'Maintenance & Calibration',
+      desc: 'Equipment maintenance schedules, recalibration dates, and fault tracking.',
+      status: 'ISO 17025 Compliance Active',
+      badge: 'Zero Overdue',
+      icon: Wrench,
+      path: '/maintenance',
+      accent: 'border-[#FFD2BF] bg-[#FFF8F2] text-[#8961D8]'
+    },
+    {
+      id: 'procurement',
+      title: 'Procurement & Vendors',
+      desc: 'Multi-tier purchase approvals, catalog items in Indian Rupees (₹), and Dean sign-offs.',
+      status: 'Tiered Dean Approvals in ₹',
+      badge: 'Certified Vendors',
+      icon: ShoppingCart,
+      path: '/procurement',
+      accent: 'border-[#E9DDF1] bg-[#FBE5EF] text-[#8961D8]'
+    },
+    {
+      id: 'safety',
+      title: 'Safety & Incidents',
+      desc: 'Chemical spill logs, eyewash station checklists, hazard protocols, and emergency guidelines.',
+      status: 'EHS Protocol: Grade A Safe',
+      badge: 'Inspected Today',
+      icon: ShieldAlert,
+      path: '/safety',
+      accent: 'border-[#BCA0F5] bg-[#F0E9FF] text-[#8961D8]'
+    },
+    {
+      id: 'reports',
+      title: 'Reports & Analytics',
+      desc: 'Accreditation-ready utilization metrics, CSV exports, attendance rates, and spending audits.',
+      status: 'Audit Export: Instant CSV',
+      badge: 'Complete Audit Trail',
+      icon: FileSpreadsheet,
+      path: '/reports',
+      accent: 'border-[#FFD2BF] bg-[#FFF8F2] text-[#8961D8]'
+    }
+  ];
+
+  // Render role-specific dashboard experience
+  const renderRoleDashboard = () => {
+    switch (currentUser.role) {
+      case 'admin':
+        return (
+          <AdminDashboard
+            onOpenQRScanner={onOpenQRScanner}
+            onOpenLiveAvailability={() => setIsLiveMatrixOpen(true)}
+          />
+        );
+      case 'labManager':
+        return (
+          <LabManagerDashboard
+            onOpenQRScanner={onOpenQRScanner}
+            onOpenLiveAvailability={() => setIsLiveMatrixOpen(true)}
+          />
+        );
+      case 'faculty':
+        return (
+          <FacultyDashboard
+            onOpenQRScanner={onOpenQRScanner}
+            onOpenLiveAvailability={() => setIsLiveMatrixOpen(true)}
+          />
+        );
+      case 'technician':
+        return (
+          <TechnicianDashboard
+            onOpenQRScanner={onOpenQRScanner}
+            onOpenFaultReport={() => setIsFaultReportOpen(true)}
+          />
+        );
+      case 'student':
+      default:
+        return (
+          <StudentDashboard
+            onOpenQRScanner={onOpenQRScanner}
+            onOpenFaultReport={() => setIsFaultReportOpen(true)}
+          />
+        );
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, [activeLab]);
-
-  const COLORS = ['#0284c7', '#38bdf8', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
-
-  if (loading || !metrics) {
-    return (
-      <div className="p-8 flex items-center justify-center min-h-[400px]">
-        <div className="flex items-center space-x-3 text-sky-400">
-          <div className="w-5 h-5 border-2 border-sky-400 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-sm font-medium">Aggregating laboratory metrics from Firestore...</span>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6 animate-in fade-in">
-      {/* Top Welcome Banner */}
-      <div className="p-5 bg-gradient-to-r from-slate-900 via-slate-850 to-sky-950/40 border border-slate-800 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
-        <div>
-          <div className="flex items-center space-x-2">
-            <span className="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 font-mono text-[10px] uppercase font-bold tracking-wider border border-sky-500/30">
-              {activeLab ? activeLab.code : 'ORGANIZATION WIDE'}
-            </span>
-            <span className="text-xs text-slate-400">
-              {activeLab ? `${activeLab.building} • Room ${activeLab.roomNumber}` : 'Consolidated Campus View'}
-            </span>
+    <div className="space-y-8 animate-in fade-in duration-300">
+      {/* Top Luna Switcher Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 bg-white border border-[#E9DDF1] rounded-3xl shadow-sm">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#BCA0F5] to-[#FFD2BF] overflow-hidden flex items-center justify-center shadow-sm">
+            <img src="/mascot.png" alt="Mascot" className="w-full h-full object-contain scale-120" />
           </div>
-          <h2 className="text-xl md:text-2xl font-extrabold text-white mt-1">
-            {activeLab ? activeLab.name : 'Multi-Laboratory Command Center'}
-          </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Real-time telemetry, stock levels, equipment bookings, and safety audit logs.
-          </p>
+          <div>
+            <h2 className="font-heading font-black text-base text-[#332B40]">
+              Academic Laboratory Dashboard
+            </h2>
+            <p className="text-xs text-[#71667D]">
+              Welcome back, <strong className="text-[#332B40]">{currentUser.displayName}</strong> ({currentUser.role})
+            </p>
+          </div>
         </div>
 
-        <div className="flex items-center space-x-2">
+        {/* View Switcher Tabs */}
+        <div className="flex items-center space-x-2 bg-[#FFF8F2] p-1 rounded-2xl border border-[#E9DDF1]">
           <button
-            onClick={onOpenQRScanner}
-            className="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold flex items-center space-x-2 shadow-lg shadow-sky-600/30 transition"
+            onClick={() => setActiveTab('workspace')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 ${
+              activeTab === 'workspace'
+                ? 'bg-white text-[#8961D8] shadow-sm border border-[#E9DDF1]'
+                : 'text-[#71667D] hover:text-[#332B40]'
+            }`}
           >
-            <QrCode className="w-4 h-4" />
-            <span>Scan Asset Label</span>
+            <Activity className="w-3.5 h-3.5" />
+            <span>Role Workspace</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('modules')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 ${
+              activeTab === 'modules'
+                ? 'bg-white text-[#8961D8] shadow-sm border border-[#E9DDF1]'
+                : 'text-[#71667D] hover:text-[#332B40]'
+            }`}
+          >
+            <LayoutGrid className="w-3.5 h-3.5" />
+            <span>Featured Modules Grid</span>
           </button>
         </div>
       </div>
 
-      {/* Critical Low Stock Alert Banner (if any) */}
-      {lowStockItems.length > 0 && (
-        <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-start justify-between gap-3 text-xs text-amber-200">
-          <div className="flex items-start space-x-3">
-            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+      {/* VIEW A: FEATURED MODULES (LUNA PORTFOLIO-STYLE PROJECT CARDS) */}
+      {activeTab === 'modules' ? (
+        <div className="space-y-6 animate-in fade-in">
+          <div className="flex items-center justify-between">
             <div>
-              <span className="font-bold text-amber-100">Low Stock Notification:</span>{' '}
-              {lowStockItems.map(i => `${i.name} (${i.quantity} ${i.unit} left)`).join('; ')}.
-              <p className="text-amber-300/80 mt-0.5">Reorder requests should be placed to prevent experiment interruptions.</p>
+              <h3 className="font-heading font-black text-2xl text-[#332B40]">
+                Featured Laboratory Modules
+              </h3>
+              <p className="text-xs text-[#71667D]">
+                Interactive core modules styled after Luna's rounded aesthetic. Click any card to open.
+              </p>
             </div>
+            <button
+              onClick={onOpenQRScanner}
+              className="px-4 py-2 bg-[#BCA0F5] hover:bg-[#8961D8] text-white font-bold rounded-2xl text-xs transition shadow-md flex items-center space-x-1.5"
+            >
+              <QrCode className="w-4 h-4" />
+              <span>Scan Asset QR</span>
+            </button>
           </div>
-          <a
-            href="/inventory"
-            className="shrink-0 px-3 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded font-semibold transition"
-          >
-            View Inventory
-          </a>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {lunaModules.map(mod => {
+              const Icon = mod.icon;
+              return (
+                <div
+                  key={mod.id}
+                  onClick={() => navigate(mod.path)}
+                  className="bg-white border border-[#E9DDF1] hover:border-[#BCA0F5] rounded-3xl p-6 shadow-sm hover:shadow-xl transition duration-300 cursor-pointer flex flex-col justify-between group"
+                >
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className={`p-3 rounded-2xl border ${mod.accent}`}>
+                        <Icon className="w-6 h-6" />
+                      </div>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FFF8F2] border border-[#E9DDF1] text-[#71667D]">
+                        {mod.badge}
+                      </span>
+                    </div>
+
+                    <div>
+                      <h4 className="font-heading font-black text-lg text-[#332B40] group-hover:text-[#8961D8] transition">
+                        {mod.title}
+                      </h4>
+                      <p className="text-xs text-[#71667D] leading-relaxed mt-1">
+                        {mod.desc}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 mt-4 border-t border-[#E9DDF1] flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-[#71667D] truncate max-w-[160px]">
+                      {mod.status}
+                    </span>
+                    <span className="text-xs font-black text-[#8961D8] group-hover:translate-x-1 transition flex items-center space-x-1">
+                      <span>Open</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
+      ) : (
+        /* VIEW B: ROLE WORKSPACE (Role-specific telemetry & tables) */
+        renderRoleDashboard()
       )}
 
-      {/* Key Metric Stat Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {/* Total Inventory Items */}
-        <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-1">
-          <div className="flex items-center justify-between text-slate-400 text-xs">
-            <span>Inventory Items</span>
-            <Boxes className="w-4 h-4 text-sky-400" />
-          </div>
-          <div className="text-2xl font-bold text-white">{metrics.totalInventoryItems}</div>
-          <div className="text-[11px] text-slate-400 flex items-center gap-1">
-            <DollarSign className="w-3 h-3 text-emerald-400" />
-            <span>Est. Val: <strong className="text-slate-200">${metrics.totalInventoryValue.toLocaleString()}</strong></span>
-          </div>
-        </div>
+      {/* Global Live Resource Availability Modal */}
+      <LiveResourceAvailabilityModal
+        isOpen={isLiveMatrixOpen}
+        onClose={() => setIsLiveMatrixOpen(false)}
+      />
 
-        {/* Equipment Assets */}
-        <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-1">
-          <div className="flex items-center justify-between text-slate-400 text-xs">
-            <span>Total Equipment</span>
-            <Cpu className="w-4 h-4 text-indigo-400" />
-          </div>
-          <div className="text-2xl font-bold text-white">{metrics.totalEquipment}</div>
-          <div className="text-[11px] text-slate-400 flex items-center justify-between">
-            <span className="text-emerald-400 font-medium">{metrics.availableEquipment} Available</span>
-            {metrics.blockedEquipment > 0 && (
-              <span className="text-rose-400 font-medium">{metrics.blockedEquipment} Blocked</span>
-            )}
-          </div>
-        </div>
-
-        {/* Active Bookings */}
-        <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-1">
-          <div className="flex items-center justify-between text-slate-400 text-xs">
-            <span>Active Reservations</span>
-            <CalendarCheck className="w-4 h-4 text-emerald-400" />
-          </div>
-          <div className="text-2xl font-bold text-white">{metrics.activeBookings}</div>
-          <div className="text-[11px] text-slate-400">
-            {metrics.overdueLoans > 0 ? (
-              <span className="text-rose-400 font-medium">{metrics.overdueLoans} Overdue Returns</span>
-            ) : (
-              <span className="text-slate-400">No overdue loans</span>
-            )}
-          </div>
-        </div>
-
-        {/* Safety & Governance */}
-        <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-1">
-          <div className="flex items-center justify-between text-slate-400 text-xs">
-            <span>Open Incidents</span>
-            <ShieldAlert className="w-4 h-4 text-rose-400" />
-          </div>
-          <div className="text-2xl font-bold text-white">{metrics.openIncidents}</div>
-          <div className="text-[11px] text-slate-400">
-            <span>Pending Purchases: <strong className="text-slate-200">{metrics.pendingPurchases}</strong></span>
-          </div>
-        </div>
-      </div>
-
-      {/* Analytics Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Inventory Category Breakdown */}
-        <div className="p-5 bg-slate-900 border border-slate-800 rounded-xl space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold text-sm text-slate-100">Inventory Distribution by Category</h3>
-              <p className="text-xs text-slate-400">Item counts across laboratory classifications</p>
-            </div>
-          </div>
-
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={metrics.categoryChartData}>
-                <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} />
-                <YAxis stroke="#64748b" fontSize={10} tickLine={false} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', fontSize: '12px' }}
-                  itemStyle={{ color: '#38bdf8' }}
-                />
-                <Bar dataKey="value" fill="#0284c7" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Equipment Operational Status */}
-        <div className="p-5 bg-slate-900 border border-slate-800 rounded-xl space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold text-sm text-slate-100">Equipment Operational Status</h3>
-              <p className="text-xs text-slate-400">Availability, reservations, and maintenance locks</p>
-            </div>
-          </div>
-
-          <div className="h-64 w-full flex items-center justify-center">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={metrics.equipmentStatusChartData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={85}
-                  paddingAngle={5}
-                  dataKey="count"
-                  nameKey="status"
-                >
-                  {metrics.equipmentStatusChartData.map((entry: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', fontSize: '12px' }}
-                />
-                <Legend
-                  verticalAlign="bottom"
-                  height={36}
-                  formatter={(val) => <span className="text-xs text-slate-300">{val}</span>}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Audit History Ledger */}
-      <div className="p-5 bg-slate-900 border border-slate-800 rounded-xl space-y-3">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-          <div>
-            <h3 className="font-semibold text-sm text-slate-100">Live Multi-Lab Audit Ledger</h3>
-            <p className="text-xs text-slate-400">Chronological history of immutable transactions and operations</p>
-          </div>
-          <a
-            href="/reports"
-            className="text-xs text-sky-400 hover:text-sky-300 flex items-center space-x-1"
-          >
-            <span>Full Audit Trail</span>
-            <ArrowUpRight className="w-3.5 h-3.5" />
-          </a>
-        </div>
-
-        <div className="divide-y divide-slate-800/60">
-          {recentAudits.map((log) => (
-            <div key={log.id} className="py-2.5 flex items-start justify-between text-xs">
-              <div className="space-y-0.5">
-                <div className="flex items-center space-x-2">
-                  <span className="font-mono font-bold text-sky-400">{log.action}</span>
-                  <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-slate-400">
-                    {log.category}
-                  </span>
-                </div>
-                <p className="text-slate-300 text-xs">{log.details}</p>
-                <span className="text-[10px] text-slate-500">
-                  By {log.userName} • {new Date(log.timestamp).toLocaleString()}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Fault Reporting Modal */}
+      <FaultReportingModal
+        isOpen={isFaultReportOpen}
+        onClose={() => setIsFaultReportOpen(false)}
+      />
     </div>
   );
 };

@@ -2,22 +2,31 @@
 <html lang="en" class="h-full">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/pwa-192x192.svg" />
+    <link rel="icon" type="image/png" href="/pwa-192x192.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#0f172a" />
-    <meta name="description" content="ILMS — Enterprise Multi-Laboratory Inventory, Asset, Booking, and Safety Management System for Academic, Engineering, and Scientific Institutions." />
+    <meta name="theme-color" content="#9333EA" />
+    <meta name="description" content="ILMS — Intelligent Multi-Laboratory Inventory and Lab Management System for Academic, Engineering, and Scientific Institutions." />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="ILMS" />
-    <link rel="apple-touch-icon" href="/pwa-192x192.svg" />
+    <link rel="apple-touch-icon" href="/pwa-192x192.png" />
     <link rel="manifest" href="/manifest.json" />
+    <script>
+      // Early capture of PWA beforeinstallprompt so it is never missed by late-loading React components
+      window.__deferredPwaPrompt = null;
+      window.addEventListener('beforeinstallprompt', function(e) {
+        e.preventDefault();
+        window.__deferredPwaPrompt = e;
+        window.dispatchEvent(new CustomEvent('pwa-installable'));
+      });
+    </script>
     <!-- Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-    <title>ILMS — Multi-Laboratory Inventory & Lab Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <title>ILMS — Intelligent Multi-Laboratory Management</title>
   </head>
-  <body class="h-full bg-slate-950 text-slate-100 font-sans antialiased selection:bg-sky-500/20 selection:text-sky-300">
+  <body class="h-full bg-brand-bg text-brand-dark dark:bg-brand-darkSurface dark:text-slate-100 font-sans antialiased selection:bg-brand-purple/20 selection:text-brand-violet">
     <div id="root" class="h-full min-h-screen flex flex-col"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

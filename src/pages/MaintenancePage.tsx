@@ -106,21 +106,28 @@ export const MaintenancePage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 sm:p-8 bg-white border border-[#E4E7F0] rounded-3xl text-[#172033] shadow-card">
         <div>
-          <h2 className="text-xl font-bold text-white flex items-center space-x-2">
-            <Wrench className="w-5 h-5 text-amber-400" />
-            <span>Equipment Maintenance & Calibration Tracking</span>
-          </h2>
-          <p className="text-xs text-slate-400">
-            {activeLab ? `${activeLab.name} (${activeLab.code})` : 'All Laboratories'} • Preventative schedules, fault tickets, and safety unblocking
+          <div className="flex items-center space-x-2">
+            <span className="px-3 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-mono text-xs uppercase font-extrabold tracking-wider">
+              Asset Health & Calibration
+            </span>
+            <span className="text-[#5B6478] text-xs font-semibold">
+              {activeLab ? `${activeLab.name} (${activeLab.code})` : 'All Laboratories'} • Preventative schedules, fault tickets, and safety unblocking
+            </span>
+          </div>
+          <h1 className="font-heading font-black text-2xl sm:text-4xl text-[#172033] mt-2">
+            Equipment Maintenance & Calibration Tracking
+          </h1>
+          <p className="text-sm sm:text-base text-[#5B6478] mt-1 max-w-xl">
+            Schedule recurring ISO/IEC calibrations, track technician sign-offs, restore maintenance locks, and audit instrumentation reliability.
           </p>
         </div>
 
         {can('manage_equipment') && (
           <button
             onClick={() => setIsScheduleModalOpen(true)}
-            className="px-3.5 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-semibold flex items-center space-x-1.5 shadow-lg shadow-amber-600/20 transition"
+            className="px-5 py-3 bg-[#18BDF5] hover:bg-[#38BDF8] text-[#172033] font-extrabold rounded-2xl text-xs sm:text-sm flex items-center space-x-2 shadow-md transition self-start md:self-auto"
           >
             <Plus className="w-4 h-4" />
             <span>Schedule Maintenance</span>
@@ -129,24 +136,24 @@ export const MaintenancePage: React.FC = () => {
       </div>
 
       {/* Maintenance Records Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
+      <div className="bg-white border border-[#E4E7F0] rounded-3xl overflow-hidden shadow-card">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="border-b border-slate-800 bg-slate-800/50 text-slate-400 uppercase tracking-wider text-[10px]">
-                <th className="py-3 px-4">Instrument Asset</th>
-                <th className="py-3 px-3">Service Type</th>
-                <th className="py-3 px-3">Scheduled Date</th>
-                <th className="py-3 px-3">Technician / Vendor</th>
-                <th className="py-3 px-3">Cost ($)</th>
-                <th className="py-3 px-3">Status</th>
-                <th className="py-3 px-4 text-center">Actions</th>
+              <tr className="border-b border-[#E4E7F0] bg-[#F5F6FC] text-[#5B6478] uppercase tracking-wider text-[10px] font-bold">
+                <th className="py-3.5 px-5">Instrument Asset</th>
+                <th className="py-3.5 px-4">Service Type</th>
+                <th className="py-3.5 px-4">Scheduled Date</th>
+                <th className="py-3.5 px-4">Technician / Vendor</th>
+                <th className="py-3.5 px-4">Cost ($)</th>
+                <th className="py-3.5 px-4">Status</th>
+                <th className="py-3.5 px-5 text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody className="divide-y divide-[#E4E7F0]">
               {records.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-500 text-xs">
+                  <td colSpan={7} className="py-12 text-center text-[#5B6478] text-xs">
                     No maintenance or calibration logs found.
                   </td>
                 </tr>
@@ -156,46 +163,46 @@ export const MaintenancePage: React.FC = () => {
                   const canSignoff = can('manage_equipment') && rec.status !== 'COMPLETED';
 
                   return (
-                    <tr key={rec.id} className="hover:bg-slate-800/40 transition">
-                      <td className="py-3 px-4">
-                        <div className="font-semibold text-slate-100">{rec.equipmentName}</div>
+                    <tr key={rec.id} className="hover:bg-[#F5F6FC]/60 transition">
+                      <td className="py-3.5 px-5">
+                        <div className="font-bold text-sm text-[#172033]">{rec.equipmentName}</div>
                         {rec.faultDescription && (
-                          <div className="text-[11px] text-amber-300/80 italic mt-0.5">
+                          <div className="text-[11px] text-amber-700 italic mt-0.5">
                             "{rec.faultDescription}"
                           </div>
                         )}
                       </td>
-                      <td className="py-3 px-3 font-mono text-sky-400 font-medium">
+                      <td className="py-3.5 px-4 font-mono text-cyan-800 font-bold">
                         {rec.type}
                       </td>
-                      <td className="py-3 px-3 font-mono text-[11px] text-slate-300">
+                      <td className="py-3.5 px-4 font-mono text-[11px] text-[#5B6478]">
                         {new Date(rec.scheduledDate).toLocaleDateString()}
                       </td>
-                      <td className="py-3 px-3 text-slate-300">
+                      <td className="py-3.5 px-4 text-[#5B6478] font-medium">
                         {rec.serviceProvider || rec.technicianName}
                       </td>
-                      <td className="py-3 px-3 font-mono font-bold text-slate-200">
+                      <td className="py-3.5 px-4 font-mono font-bold text-[#172033]">
                         ${rec.cost.toFixed(2)}
                       </td>
-                      <td className="py-3 px-3">
+                      <td className="py-3.5 px-4">
                         {isOverdue ? (
-                          <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[10px] font-semibold">
+                          <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-800 border border-rose-200 text-[10px] font-bold">
                             <AlertTriangle className="w-3 h-3" />
                             <span>Overdue</span>
                           </span>
                         ) : rec.status === 'COMPLETED' ? (
-                          <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-semibold">
+                          <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold">
                             <CheckCircle2 className="w-3 h-3" />
                             <span>Completed</span>
                           </span>
                         ) : (
-                          <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-semibold">
+                          <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold">
                             <Clock className="w-3 h-3" />
                             <span>Scheduled</span>
                           </span>
                         )}
                       </td>
-                      <td className="py-3 px-4 text-center">
+                      <td className="py-3.5 px-5 text-center">
                         {canSignoff ? (
                           <button
                             onClick={() => {
@@ -203,13 +210,13 @@ export const MaintenancePage: React.FC = () => {
                               setWorkPerformed(rec.faultDescription ? `Resolved: ${rec.faultDescription}. Full recalibration performed.` : 'Preventive maintenance and cleaning completed.');
                               setActualCost(rec.cost || 150);
                             }}
-                            className="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-semibold flex items-center space-x-1 mx-auto transition shadow-sm"
+                            className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 mx-auto transition shadow-sm"
                           >
                             <FileCheck className="w-3.5 h-3.5" />
                             <span>Sign-Off & Unlock</span>
                           </button>
                         ) : (
-                          <span className="text-[10px] text-slate-500 italic">Signed Off</span>
+                          <span className="text-[10px] text-[#5B6478] font-bold uppercase tracking-wider">Signed Off</span>
                         )}
                       </td>
                     </tr>
@@ -223,25 +230,25 @@ export const MaintenancePage: React.FC = () => {
 
       {/* Schedule Maintenance Modal */}
       {isScheduleModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-800/50">
-              <h3 className="font-semibold text-slate-100">Schedule Maintenance / Calibration</h3>
-              <button onClick={() => setIsScheduleModalOpen(false)} className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white border border-[#E4E7F0] rounded-3xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col text-[#172033]">
+            <div className="flex items-center justify-between p-5 border-b border-[#E4E7F0] bg-white">
+              <h3 className="font-heading font-black text-lg text-[#172033]">Schedule Maintenance / Calibration</h3>
+              <button onClick={() => setIsScheduleModalOpen(false)} className="p-1.5 text-[#5B6478] hover:text-[#172033] rounded-xl hover:bg-slate-100">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateMaintenance} className="p-5 space-y-4">
+            <form onSubmit={handleCreateMaintenance} className="p-6 space-y-4">
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                <label className="text-xs font-bold uppercase tracking-wider text-[#5B6478] block mb-1">
                   Equipment Asset
                 </label>
                 <select
                   value={selectedEquipId}
                   onChange={(e) => setSelectedEquipId(e.target.value)}
                   required
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-xs focus:ring-2 focus:ring-amber-500 outline-none"
+                  className="w-full bg-[#F5F6FC] border border-[#E4E7F0] rounded-xl px-3 py-2 text-[#172033] text-xs focus:border-[#18BDF5] outline-none font-semibold"
                 >
                   {equipmentList.map((eq) => (
                     <option key={eq.id} value={eq.id}>
@@ -253,13 +260,13 @@ export const MaintenancePage: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                  <label className="text-xs font-bold uppercase tracking-wider text-[#5B6478] block mb-1">
                     Service Type
                   </label>
                   <select
                     value={serviceType}
                     onChange={(e) => setServiceType(e.target.value as any)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-slate-100 text-xs focus:ring-2 focus:ring-amber-500 outline-none"
+                    className="w-full bg-[#F5F6FC] border border-[#E4E7F0] rounded-xl px-2 py-2 text-[#172033] text-xs focus:border-[#18BDF5] outline-none font-semibold"
                   >
                     <option value="PREVENTIVE">Preventive Service</option>
                     <option value="CALIBRATION">Calibration</option>
@@ -268,7 +275,7 @@ export const MaintenancePage: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                  <label className="text-xs font-bold uppercase tracking-wider text-[#5B6478] block mb-1">
                     Scheduled Date
                   </label>
                   <input
@@ -276,13 +283,13 @@ export const MaintenancePage: React.FC = () => {
                     required
                     value={scheduledDate}
                     onChange={(e) => setScheduledDate(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-100 text-xs focus:ring-2 focus:ring-amber-500 outline-none"
+                    className="w-full bg-[#F5F6FC] border border-[#E4E7F0] rounded-xl px-3 py-2 text-[#172033] text-xs focus:border-[#18BDF5] outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                <label className="text-xs font-bold uppercase tracking-wider text-[#5B6478] block mb-1">
                   Service Provider / Certified Technician
                 </label>
                 <input
@@ -290,12 +297,12 @@ export const MaintenancePage: React.FC = () => {
                   placeholder="e.g. Agilent Direct Services or Institutional Senior Tech"
                   value={serviceProvider}
                   onChange={(e) => setServiceProvider(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-xs focus:ring-2 focus:ring-amber-500 outline-none"
+                  className="w-full bg-[#F5F6FC] border border-[#E4E7F0] rounded-xl px-3 py-2 text-[#172033] text-xs focus:border-[#18BDF5] outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                <label className="text-xs font-bold uppercase tracking-wider text-[#5B6478] block mb-1">
                   Fault / Service Description
                 </label>
                 <textarea
@@ -303,21 +310,21 @@ export const MaintenancePage: React.FC = () => {
                   placeholder="e.g. Optical alignment verification and mirror cleaning."
                   value={faultDescription}
                   onChange={(e) => setFaultDescription(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-xs focus:ring-2 focus:ring-amber-500 outline-none"
+                  className="w-full bg-[#F5F6FC] border border-[#E4E7F0] rounded-xl px-3 py-2 text-[#172033] text-xs focus:border-[#18BDF5] outline-none"
                 />
               </div>
 
-              <div className="pt-2 flex justify-end space-x-3">
+              <div className="pt-2 flex justify-end space-x-2">
                 <button
                   type="button"
                   onClick={() => setIsScheduleModalOpen(false)}
-                  className="px-4 py-1.5 text-xs text-slate-400 hover:text-white"
+                  className="px-4 py-2 text-xs font-bold text-[#5B6478] hover:text-[#172033] bg-slate-100 rounded-xl"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-semibold"
+                  className="px-5 py-2 bg-[#18BDF5] hover:bg-[#38BDF8] text-[#172033] rounded-xl text-xs font-extrabold shadow-md"
                 >
                   Create Maintenance Ticket
                 </button>
@@ -329,36 +336,36 @@ export const MaintenancePage: React.FC = () => {
 
       {/* Complete Maintenance & Unlock Modal */}
       {selectedRecordForSignoff && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-800/50">
-              <h3 className="font-semibold text-slate-100">Sign-Off & Clear Maintenance Lock</h3>
-              <button onClick={() => setSelectedRecordForSignoff(null)} className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white border border-[#E4E7F0] rounded-3xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col text-[#172033]">
+            <div className="flex items-center justify-between p-5 border-b border-[#E4E7F0] bg-white">
+              <h3 className="font-heading font-black text-lg text-[#172033]">Sign-Off & Clear Maintenance Lock</h3>
+              <button onClick={() => setSelectedRecordForSignoff(null)} className="p-1.5 text-[#5B6478] hover:text-[#172033] rounded-xl hover:bg-slate-100">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCompleteSignoff} className="p-5 space-y-4">
-              <div className="p-3 bg-slate-800/60 rounded-lg border border-slate-700 text-xs space-y-1">
-                <div>Asset: <strong className="text-slate-100">{selectedRecordForSignoff.equipmentName}</strong></div>
-                <div>Service: <span className="font-mono text-sky-400">{selectedRecordForSignoff.type}</span></div>
+            <form onSubmit={handleCompleteSignoff} className="p-6 space-y-4">
+              <div className="p-3 bg-[#F5F6FC] rounded-2xl border border-[#E4E7F0] text-xs space-y-1">
+                <div>Asset: <strong className="text-[#172033]">{selectedRecordForSignoff.equipmentName}</strong></div>
+                <div>Service: <span className="font-mono text-cyan-800 font-bold">{selectedRecordForSignoff.type}</span></div>
               </div>
 
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-                  Work Performed & Certification Details <span className="text-rose-400">*</span>
+                <label className="text-xs font-bold uppercase tracking-wider text-[#5B6478] block mb-1">
+                  Work Performed & Certification Details <span className="text-rose-500">*</span>
                 </label>
                 <textarea
                   rows={3}
                   required
                   value={workPerformed}
                   onChange={(e) => setWorkPerformed(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-xs focus:ring-2 focus:ring-emerald-500 outline-none"
+                  className="w-full bg-[#F5F6FC] border border-[#E4E7F0] rounded-xl px-3 py-2 text-[#172033] text-xs focus:border-[#18BDF5] outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                <label className="text-xs font-bold uppercase tracking-wider text-[#5B6478] block mb-1">
                   Parts Replaced (Comma-separated)
                 </label>
                 <input
@@ -366,12 +373,12 @@ export const MaintenancePage: React.FC = () => {
                   placeholder="e.g. Diode lamp, O-ring seal, drive belt"
                   value={partsReplacedStr}
                   onChange={(e) => setPartsReplacedStr(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-xs focus:ring-2 focus:ring-emerald-500 outline-none"
+                  className="w-full bg-[#F5F6FC] border border-[#E4E7F0] rounded-xl px-3 py-2 text-[#172033] text-xs focus:border-[#18BDF5] outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                <label className="text-xs font-bold uppercase tracking-wider text-[#5B6478] block mb-1">
                   Final Cost ($)
                 </label>
                 <input
@@ -379,21 +386,21 @@ export const MaintenancePage: React.FC = () => {
                   step="0.01"
                   value={actualCost}
                   onChange={(e) => setActualCost(Number(e.target.value))}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-xs focus:ring-2 focus:ring-emerald-500 outline-none"
+                  className="w-full bg-[#F5F6FC] border border-[#E4E7F0] rounded-xl px-3 py-2 text-[#172033] text-xs focus:border-[#18BDF5] outline-none"
                 />
               </div>
 
-              <div className="pt-2 flex justify-end space-x-3">
+              <div className="pt-2 flex justify-end space-x-2">
                 <button
                   type="button"
                   onClick={() => setSelectedRecordForSignoff(null)}
-                  className="px-4 py-1.5 text-xs text-slate-400 hover:text-white"
+                  className="px-4 py-2 text-xs font-bold text-[#5B6478] hover:text-[#172033] bg-slate-100 rounded-xl"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold flex items-center space-x-1.5"
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-extrabold flex items-center space-x-1.5 shadow-md shadow-emerald-600/20"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Restore Asset to AVAILABLE</span>

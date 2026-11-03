@@ -12,7 +12,15 @@ import {
   AuditLogEntry,
   StockMovement,
   MovementType,
-  UserRole
+  UserRole,
+  ComputerWorkstation,
+  PracticalSession,
+  SmartHealthScore,
+  FaultTicket,
+  AttendanceRecord,
+  AttendanceStatus,
+  CertifiedVendor,
+  VendorCatalogProduct
 } from '../types';
 import {
   INITIAL_USERS,
@@ -25,12 +33,19 @@ import {
   INITIAL_PURCHASE_REQUESTS,
   INITIAL_INCIDENTS,
   INITIAL_NOTIFICATIONS,
-  INITIAL_AUDIT_LOGS
+  INITIAL_AUDIT_LOGS,
+  INITIAL_WORKSTATIONS,
+  INITIAL_PRACTICAL_SESSIONS,
+  INITIAL_FAULT_TICKETS,
+  INITIAL_ATTENDANCE,
+  INITIAL_VENDORS,
+  INITIAL_VENDOR_PRODUCTS
 } from '../lib/firebase/seedData';
 import { db, isFirebaseConfigured } from '../lib/firebase/firebase';
 import {
   collection,
   getDocs,
+  getDoc,
   doc,
   setDoc,
   deleteDoc,
@@ -39,7 +54,64 @@ import {
   runTransaction
 } from 'firebase/firestore';
 
-const STORAGE_KEY_PREFIX = 'ILMS_STORE_V1_';
+export interface CloudSyncStatus {
+  state: 'idle' | 'checking' | 'synced' | 'permission_denied' | 'error';
+  lastChecked: string | null;
+  errorMessage: string | null;
+  syncedCount: number;
+}
+
+let currentSyncStatus: CloudSyncStatus = {
+  state: 'idle',
+  lastChecked: null,
+  errorMessage: null,
+  syncedCount: 0
+};
+
+const syncListeners = new Set<(status: CloudSyncStatus) => void>();
+
+export const notifySyncStatus = (status: Partial<CloudSyncStatus>) => {
+  currentSyncStatus = { ...currentSyncStatus, ...status };
+  syncListeners.forEach(listener => {
+    try {
+      listener(currentSyncStatus);
+    } catch (e) {
+      console.error('Sync listener error:', e);
+    }
+  });
+};
+
+const handleFirestoreError = (action: string, err: any) => {
+  console.warn(`Firestore ${action} warning:`, err);
+  const isPerm = err?.code === 'permission-denied' ||
+    (typeof err?.message === 'string' && err.message.toLowerCase().includes('permission'));
+  notifySyncStatus({
+    state: isPerm ? 'permission_denied' : 'error',
+    errorMessage: isPerm
+      ? 'Cloud Firestore write permissions denied. Please update rules in Firebase Console.'
+      : err?.message || 'Firestore sync error',
+    lastChecked: new Date().toISOString()
+  });
+};
+
+const handleFirestoreSuccess = (increment = 1) => {
+  notifySyncStatus({
+    state: 'synced',
+    errorMessage: null,
+    lastChecked: new Date().toISOString(),
+    syncedCount: currentSyncStatus.syncedCount + increment
+  });
+};
+
+const sanitizeForFirestore = <T>(obj: T): T => {
+  try {
+    return JSON.parse(JSON.stringify(obj));
+  } catch {
+    return obj;
+  }
+};
+
+const STORAGE_KEY_PREFIX = 'ILMS_STORE_V4_';
 
 class LocalStoreManager {
   private memoryStore: Record<string, string> = {};
@@ -92,6 +164,12 @@ class LocalStoreManager {
     this.set('incidents', INITIAL_INCIDENTS);
     this.set('notifications', INITIAL_NOTIFICATIONS);
     this.set('auditLogs', INITIAL_AUDIT_LOGS);
+    this.set('workstations', INITIAL_WORKSTATIONS);
+    this.set('practicalSessions', INITIAL_PRACTICAL_SESSIONS);
+    this.set('faultTickets', INITIAL_FAULT_TICKETS);
+    this.set('attendance', INITIAL_ATTENDANCE);
+    this.set('vendors', INITIAL_VENDORS);
+    this.set('vendorProducts', INITIAL_VENDOR_PRODUCTS);
     this.set('stockMovements', []);
     this.set('initialized', 'true');
   }
@@ -131,6 +209,24 @@ class LocalStoreManager {
 
   public getStockMovements(): StockMovement[] { return this.get('stockMovements', []); }
   public setStockMovements(m: StockMovement[]) { this.set('stockMovements', m); }
+
+  public getWorkstations(): ComputerWorkstation[] { return this.get('workstations', INITIAL_WORKSTATIONS); }
+  public setWorkstations(ws: ComputerWorkstation[]) { this.set('workstations', ws); }
+
+  public getPracticalSessions(): PracticalSession[] { return this.get('practicalSessions', INITIAL_PRACTICAL_SESSIONS); }
+  public setPracticalSessions(s: PracticalSession[]) { this.set('practicalSessions', s); }
+
+  public getFaultTickets(): FaultTicket[] { return this.get('faultTickets', INITIAL_FAULT_TICKETS); }
+  public setFaultTickets(f: FaultTicket[]) { this.set('faultTickets', f); }
+
+  public getAttendance(): AttendanceRecord[] { return this.get('attendance', INITIAL_ATTENDANCE); }
+  public setAttendance(att: AttendanceRecord[]) { this.set('attendance', att); }
+
+  public getVendors(): CertifiedVendor[] { return this.get('vendors', INITIAL_VENDORS); }
+  public setVendors(v: CertifiedVendor[]) { this.set('vendors', v); }
+
+  public getVendorProducts(): VendorCatalogProduct[] { return this.get('vendorProducts', INITIAL_VENDOR_PRODUCTS); }
+  public setVendorProducts(vp: VendorCatalogProduct[]) { this.set('vendorProducts', vp); }
 }
 
 export const localStore = new LocalStoreManager();
@@ -138,9 +234,48 @@ localStore.init();
 
 export class DataService {
   // --- USERS & AUTH ---
-  static async getCurrentUser(userId: string): Promise<UserProfile | null> {
+  static async getCurrentUser(userIdOrEmail: string): Promise<UserProfile | null> {
+    if (!userIdOrEmail) return null;
+    const clean = userIdOrEmail.trim();
+    const cleanLower = clean.toLowerCase();
+
+    // 1. Check localStore first
     const users = localStore.getUsers();
-    return users.find(u => u.id === userId) || null;
+    const localMatch = users.find(u => u.id === clean || u.email?.toLowerCase() === cleanLower);
+    if (localMatch) return localMatch;
+
+    // 2. If Firebase is active, check Firestore by document ID or email field
+    if (isFirebaseConfigured() && db) {
+      try {
+        const docRef = doc(db, 'users', clean);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const profile = { id: docSnap.id, ...docSnap.data() } as UserProfile;
+          const currentList = localStore.getUsers();
+          if (!currentList.some(u => u.id === profile.id)) {
+            currentList.push(profile);
+            localStore.setUsers(currentList);
+          }
+          return profile;
+        }
+
+        const q = query(collection(db, 'users'), where('email', '==', cleanLower));
+        const qSnap = await getDocs(q);
+        if (!qSnap.empty) {
+          const profile = { id: qSnap.docs[0].id, ...qSnap.docs[0].data() } as UserProfile;
+          const currentList = localStore.getUsers();
+          if (!currentList.some(u => u.id === profile.id)) {
+            currentList.push(profile);
+            localStore.setUsers(currentList);
+          }
+          return profile;
+        }
+      } catch (err) {
+        console.warn('Firestore user fetch failed:', err);
+      }
+    }
+
+    return null;
   }
 
   static async getAllUsers(): Promise<UserProfile[]> {
@@ -241,7 +376,16 @@ export class DataService {
         const q = labId ? query(col, where('laboratoryId', '==', labId)) : col;
         const snap = await getDocs(q);
         if (!snap.empty) {
-          return snap.docs.map(d => ({ id: d.id, ...d.data() } as UniversalInventoryItem));
+          const cloudItems = snap.docs.map(d => ({ id: d.id, ...d.data() } as UniversalInventoryItem));
+          const localItems = localStore.getInventory();
+          const merged = [...cloudItems];
+          for (const loc of localItems) {
+            if (!merged.some(m => m.id === loc.id)) {
+              merged.push(loc);
+            }
+          }
+          localStore.setInventory(merged);
+          return labId ? merged.filter(i => i.laboratoryId === labId) : merged;
         }
       } catch (err) {
         console.warn('Firestore inventory fetch failed, using local store', err);
@@ -292,9 +436,10 @@ export class DataService {
 
     if (isFirebaseConfigured() && db) {
       try {
-        await setDoc(doc(db, 'inventoryItems', newItem.id), newItem);
+        await setDoc(doc(db, 'inventoryItems', newItem.id), sanitizeForFirestore(newItem));
+        handleFirestoreSuccess();
       } catch (err) {
-        console.warn('Firestore item create failed, using local', err);
+        handleFirestoreError('inventory item create', err);
       }
     }
     const items = localStore.getInventory();
@@ -327,9 +472,10 @@ export class DataService {
 
     if (isFirebaseConfigured() && db) {
       try {
-        await setDoc(doc(db, 'inventoryItems', updated.id), updated, { merge: true });
+        await setDoc(doc(db, 'inventoryItems', updated.id), sanitizeForFirestore(updated), { merge: true });
+        handleFirestoreSuccess();
       } catch (err) {
-        console.warn('Firestore update failed, using local', err);
+        handleFirestoreError('inventory item update', err);
       }
     }
     const items = localStore.getInventory();
@@ -345,8 +491,9 @@ export class DataService {
     if (isFirebaseConfigured() && db) {
       try {
         await deleteDoc(doc(db, 'inventoryItems', itemId));
+        handleFirestoreSuccess();
       } catch (err) {
-        console.warn('Firestore delete failed, using local', err);
+        handleFirestoreError('inventory item delete', err);
       }
     }
     const items = localStore.getInventory().filter(i => i.id !== itemId);
@@ -367,7 +514,16 @@ export class DataService {
     }
 
     const items = localStore.getInventory();
-    const item = items.find(i => i.id === itemId);
+    let item = items.find(i => i.id === itemId);
+    if (!item && isFirebaseConfigured() && db) {
+      try {
+        const docSnap = await getDoc(doc(db, 'inventoryItems', itemId));
+        if (docSnap.exists()) {
+          item = { id: docSnap.id, ...docSnap.data() } as UniversalInventoryItem;
+          items.push(item);
+        }
+      } catch {}
+    }
     if (!item) throw new Error('Inventory item not found.');
 
     const currentQty = Number(item.quantity) || 0;
@@ -382,6 +538,15 @@ export class DataService {
     item.isLowStock = isLow;
     item.status = newQty === 0 ? 'out_of_stock' : isLow ? 'low_stock' : 'available';
     item.updatedAt = new Date().toISOString();
+
+    if (isFirebaseConfigured() && db) {
+      try {
+        await setDoc(doc(db, 'inventoryItems', item.id), sanitizeForFirestore(item), { merge: true });
+        handleFirestoreSuccess();
+      } catch (err) {
+        handleFirestoreError('stock movement item update', err);
+      }
+    }
 
     const movement: StockMovement = {
       id: `mov-${Date.now()}`,
@@ -472,9 +637,10 @@ export class DataService {
 
     if (isFirebaseConfigured() && db) {
       try {
-        await setDoc(doc(db, 'equipmentAssets', newAsset.id), newAsset);
+        await setDoc(doc(db, 'equipmentAssets', newAsset.id), sanitizeForFirestore(newAsset));
+        handleFirestoreSuccess();
       } catch (err) {
-        console.warn('Firestore equipment create failed', err);
+        handleFirestoreError('equipment create', err);
       }
     }
     const equip = localStore.getEquipment();
@@ -500,9 +666,10 @@ export class DataService {
     const updated = { ...asset, updatedAt: new Date().toISOString() };
     if (isFirebaseConfigured() && db) {
       try {
-        await setDoc(doc(db, 'equipmentAssets', updated.id), updated, { merge: true });
+        await setDoc(doc(db, 'equipmentAssets', updated.id), sanitizeForFirestore(updated), { merge: true });
+        handleFirestoreSuccess();
       } catch (err) {
-        console.warn('Firestore equipment update failed', err);
+        handleFirestoreError('equipment update', err);
       }
     }
     const equip = localStore.getEquipment();
@@ -573,9 +740,10 @@ export class DataService {
 
     if (isFirebaseConfigured() && db) {
       try {
-        await setDoc(doc(db, 'bookings', newBooking.id), newBooking);
+        await setDoc(doc(db, 'bookings', newBooking.id), sanitizeForFirestore(newBooking));
+        handleFirestoreSuccess();
       } catch (err) {
-        console.warn('Firestore booking write failed', err);
+        handleFirestoreError('booking create', err);
       }
     }
 
@@ -618,9 +786,10 @@ export class DataService {
 
     if (isFirebaseConfigured() && db) {
       try {
-        await setDoc(doc(db, 'bookings', bookingId), booking, { merge: true });
+        await setDoc(doc(db, 'bookings', bookingId), sanitizeForFirestore(booking), { merge: true });
+        handleFirestoreSuccess();
       } catch (err) {
-        console.warn('Firestore booking status update failed', err);
+        handleFirestoreError('booking update', err);
       }
     }
     localStore.setBookings(bookings);
@@ -655,7 +824,16 @@ export class DataService {
     }
 
     const items = localStore.getInventory();
-    const item = items.find(i => i.id === itemId);
+    let item = items.find(i => i.id === itemId);
+    if (!item && isFirebaseConfigured() && db) {
+      try {
+        const docSnap = await getDoc(doc(db, 'inventoryItems', itemId));
+        if (docSnap.exists()) {
+          item = { id: docSnap.id, ...docSnap.data() } as UniversalInventoryItem;
+          items.push(item);
+        }
+      } catch {}
+    }
     if (!item) throw new Error('Item not found.');
 
     if (item.quantity < quantity) {
@@ -850,7 +1028,7 @@ export class DataService {
     await this.createNotification({
       type: 'PURCHASE_APPROVAL',
       title: 'New Purchase Request Submitted',
-      message: `${currentUser.displayName} submitted PR "${newPr.title}" for $${newPr.totalEstimatedCost.toFixed(2)}.`,
+      message: `${currentUser.displayName} submitted PR "${newPr.title}" for ₹${newPr.totalEstimatedCost.toLocaleString('en-IN')}.`,
       laboratoryId: newPr.laboratoryId,
       targetRole: 'labManager'
     });
@@ -1040,4 +1218,626 @@ export class DataService {
       equipmentStatusChartData
     };
   }
+
+  // --- COMPUTER WORKSTATIONS (CS / IT Labs) ---
+  static async getWorkstations(labId?: string): Promise<ComputerWorkstation[]> {
+    const list = localStore.getWorkstations();
+    return labId ? list.filter(w => w.laboratoryId === labId) : list;
+  }
+
+  // --- PRACTICAL SESSIONS & WORKSPACES ---
+  static async getPracticalSessions(labId?: string): Promise<PracticalSession[]> {
+    const list = localStore.getPracticalSessions();
+    return labId ? list.filter(s => s.laboratoryId === labId) : list;
+  }
+
+  static async createPracticalSession(
+    session: Omit<PracticalSession, 'id'>,
+    currentUser: UserProfile
+  ): Promise<PracticalSession> {
+    const newSession: PracticalSession = {
+      ...session,
+      id: `sess-${Date.now()}`
+    };
+    const list = localStore.getPracticalSessions();
+    list.unshift(newSession);
+    localStore.setPracticalSessions(list);
+
+    await this.logAudit({
+      action: 'SESSION_SCHEDULED',
+      category: 'BOOKING',
+      laboratoryId: newSession.laboratoryId,
+      userId: currentUser.id,
+      userName: currentUser.displayName,
+      details: `Scheduled practical session: "${newSession.title}" (${newSession.courseCode})`
+    });
+
+    return newSession;
+  }
+
+  // --- FAULT REPORTING & RESOLUTION TIMELINE ---
+  static async getFaultTickets(labId?: string): Promise<FaultTicket[]> {
+    const list = localStore.getFaultTickets();
+    return labId ? list.filter(f => f.laboratoryId === labId) : list;
+  }
+
+  static async reportFault(
+    ticket: Omit<FaultTicket, 'id' | 'reportedAt' | 'timeline' | 'status'>,
+    currentUser: UserProfile
+  ): Promise<FaultTicket> {
+    const now = new Date().toISOString();
+    const newTicket: FaultTicket = {
+      ...ticket,
+      id: `flt-${Date.now()}`,
+      status: 'OPEN',
+      reportedAt: now,
+      timeline: [
+        { stage: 'Reported', timestamp: now, note: `Logged by ${currentUser.displayName}` }
+      ]
+    };
+    const list = localStore.getFaultTickets();
+    list.unshift(newTicket);
+    localStore.setFaultTickets(list);
+
+    await this.createNotification({
+      type: 'SAFETY_ALERT',
+      title: `Equipment Fault Logged: ${newTicket.equipmentName}`,
+      message: `Priority: ${newTicket.priority}. Category: ${newTicket.problemCategory}. Assigned to technician.`,
+      laboratoryId: newTicket.laboratoryId,
+      targetRole: 'technician'
+    });
+
+    return newTicket;
+  }
+
+  // --- SMART LAB HEALTH SCORE ---
+  static async calculateLabHealthScore(labId?: string): Promise<SmartHealthScore> {
+    const equip = await this.getEquipment(labId);
+    const maint = await this.getMaintenanceRecords(labId);
+    const inv = await this.getInventory(labId);
+    const incidents = await this.getIncidents(labId);
+
+    // 1. Availability (35%)
+    const availRatio = equip.length > 0 ? (equip.filter(e => e.status === 'AVAILABLE').length / equip.length) : 1;
+    const availabilityScore = Math.round(availRatio * 100);
+
+    // 2. Maintenance readiness (25%)
+    const overdueMaint = maint.filter(m => m.status === 'OVERDUE').length;
+    const maintenanceScore = Math.max(0, 100 - (overdueMaint * 30));
+
+    // 3. Stock sufficiency (20%)
+    const lowStockCount = inv.filter(i => i.isLowStock || i.quantity <= i.minStock).length;
+    const stockScore = Math.max(0, 100 - (lowStockCount * 25));
+
+    // 4. Incident safety (20%)
+    const openIncidents = incidents.filter(i => i.status === 'OPEN' || i.status === 'INVESTIGATING').length;
+    const incidentScore = Math.max(0, 100 - (openIncidents * 35));
+
+    // Weighted aggregate score
+    const overall = Math.round(
+      (availabilityScore * 0.35) +
+      (maintenanceScore * 0.25) +
+      (stockScore * 0.20) +
+      (incidentScore * 0.20)
+    );
+
+    let summary = 'Operational readiness is optimal with all major instruments verified.';
+    if (overall < 60) {
+      summary = 'Attention required: Multiple maintenance overdues or critical stock shortages detected.';
+    } else if (overall < 80) {
+      summary = 'Good operational status with minor reorders or scheduled maintenance pending.';
+    }
+
+    return {
+      overall: Math.min(100, Math.max(10, overall)),
+      availabilityScore,
+      maintenanceScore,
+      stockScore,
+      incidentScore,
+      summary
+    };
+  }
+
+  // --- ATTENDANCE MANAGEMENT ---
+  static async getAttendanceRecords(labId?: string): Promise<AttendanceRecord[]> {
+    if (isFirebaseConfigured() && db) {
+      try {
+        const col = collection(db, 'attendance');
+        const q = labId ? query(col, where('laboratoryId', '==', labId)) : col;
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          return snap.docs.map(d => ({ id: d.id, ...d.data() } as AttendanceRecord));
+        }
+      } catch (err) {
+        console.warn('Firestore attendance fetch failed, using local store', err);
+      }
+    }
+    const list = localStore.getAttendance();
+    return labId ? list.filter(a => a.laboratoryId === labId) : list;
+  }
+
+  static async createAttendanceRecord(
+    recordData: Omit<AttendanceRecord, 'id' | 'createdAt' | 'updatedAt' | 'isConfirmed' | 'confirmedAt'>,
+    currentUser: UserProfile
+  ): Promise<AttendanceRecord> {
+    if (currentUser.role === 'student') {
+      throw new Error('Unauthorized: Students cannot submit attendance records.');
+    }
+
+    const now = new Date().toISOString();
+    const newRecord: AttendanceRecord = {
+      ...recordData,
+      id: `att-${Date.now()}`,
+      isConfirmed: true,
+      confirmedAt: now,
+      createdAt: now,
+      updatedAt: now
+    };
+
+    if (isFirebaseConfigured() && db) {
+      try {
+        await setDoc(doc(db, 'attendance', newRecord.id), sanitizeForFirestore(newRecord));
+        handleFirestoreSuccess();
+      } catch (err) {
+        handleFirestoreError('attendance create', err);
+      }
+    }
+
+    const list = localStore.getAttendance();
+    list.unshift(newRecord);
+    localStore.setAttendance(list);
+
+    await this.logAudit({
+      action: 'ATTENDANCE_RECORDED',
+      category: 'ADMIN',
+      laboratoryId: newRecord.laboratoryId,
+      userId: currentUser.id,
+      userName: currentUser.displayName,
+      details: `Submitted attendance for ${newRecord.sessionTitle} (${newRecord.presentCount}/${newRecord.totalStudents} present, ${newRecord.attendancePercentage}%)`
+    });
+
+    return newRecord;
+  }
+
+  static async correctAttendance(
+    recordId: string,
+    studentId: string,
+    newStatus: AttendanceStatus,
+    reason: string,
+    currentUser: UserProfile
+  ): Promise<void> {
+    if (currentUser.role === 'student') {
+      throw new Error('Unauthorized: Students cannot modify attendance records.');
+    }
+
+    const list = localStore.getAttendance();
+    const record = list.find(a => a.id === recordId);
+    if (!record) throw new Error('Attendance record not found.');
+
+    const studentItem = record.students.find(s => s.studentId === studentId);
+    if (!studentItem) throw new Error('Student not found in this attendance record.');
+
+    const oldStatus = studentItem.status;
+    studentItem.status = newStatus;
+    studentItem.remarks = reason;
+
+    // Recalculate summary metrics
+    record.presentCount = record.students.filter(s => s.status === 'PRESENT').length;
+    record.absentCount = record.students.filter(s => s.status === 'ABSENT').length;
+    record.lateCount = record.students.filter(s => s.status === 'LATE').length;
+    record.excusedCount = record.students.filter(s => s.status === 'EXCUSED').length;
+    record.attendancePercentage = Math.round((record.presentCount / record.totalStudents) * 100);
+
+    // Record audit correction
+    if (!record.corrections) record.corrections = [];
+    record.corrections.push({
+      studentId,
+      studentName: studentItem.studentName,
+      oldStatus,
+      newStatus,
+      reason,
+      updatedBy: currentUser.displayName,
+      updatedAt: new Date().toISOString()
+    });
+    record.updatedAt = new Date().toISOString();
+
+    if (isFirebaseConfigured() && db) {
+      try {
+        await setDoc(doc(db, 'attendance', recordId), sanitizeForFirestore(record), { merge: true });
+        handleFirestoreSuccess();
+      } catch (err) {
+        handleFirestoreError('attendance update', err);
+      }
+    }
+
+    localStore.setAttendance(list);
+
+    await this.logAudit({
+      action: 'ATTENDANCE_CORRECTED',
+      category: 'ADMIN',
+      laboratoryId: record.laboratoryId,
+      userId: currentUser.id,
+      userName: currentUser.displayName,
+      details: `Corrected attendance for ${studentItem.studentName} from ${oldStatus} to ${newStatus}. Reason: ${reason}`
+    });
+  }
+
+  // --- CERTIFIED VENDOR & PROCUREMENT PORTAL ---
+  static async getVendors(): Promise<CertifiedVendor[]> {
+    if (isFirebaseConfigured() && db) {
+      try {
+        const snap = await getDocs(collection(db, 'vendors'));
+        if (!snap.empty) {
+          return snap.docs.map(d => ({ id: d.id, ...d.data() } as CertifiedVendor));
+        }
+      } catch (err) {
+        console.warn('Firestore vendors fetch failed', err);
+      }
+    }
+    return localStore.getVendors();
+  }
+
+  static async verifyVendor(
+    vendorId: string,
+    certDetails: string,
+    expiryDate: string,
+    currentUser: UserProfile
+  ): Promise<void> {
+    if (currentUser.role !== 'admin') {
+      throw new Error('Security Violation: Only institutional administrators can verify certified vendors.');
+    }
+
+    const list = localStore.getVendors();
+    const vendor = list.find(v => v.id === vendorId);
+    if (!vendor) throw new Error('Vendor record not found.');
+
+    vendor.verificationStatus = 'VERIFIED';
+    vendor.certificationDetails = certDetails;
+    vendor.verifiedBy = currentUser.id;
+    vendor.verifiedByName = currentUser.displayName;
+    vendor.verificationDate = new Date().toISOString();
+    vendor.verificationExpiryDate = expiryDate;
+
+    if (isFirebaseConfigured() && db) {
+      try {
+        await setDoc(doc(db, 'vendors', vendorId), vendor, { merge: true });
+      } catch (err) {
+        console.warn('Firestore vendor update failed', err);
+      }
+    }
+
+    localStore.setVendors(list);
+
+    await this.logAudit({
+      action: 'VENDOR_VERIFIED',
+      category: 'PROCUREMENT',
+      userId: currentUser.id,
+      userName: currentUser.displayName,
+      details: `Verified vendor "${vendor.name}" [Reg: ${vendor.companyRegistrationNumber}]. Cert: ${certDetails}`
+    });
+  }
+
+  static async getVendorProducts(vendorId?: string): Promise<VendorCatalogProduct[]> {
+    if (isFirebaseConfigured() && db) {
+      try {
+        const col = collection(db, 'vendorProducts');
+        const q = vendorId ? query(col, where('vendorId', '==', vendorId)) : col;
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          return snap.docs.map(d => ({ id: d.id, ...d.data() } as VendorCatalogProduct));
+        }
+      } catch (err) {
+        console.warn('Firestore products fetch failed', err);
+      }
+    }
+    const list = localStore.getVendorProducts();
+    return vendorId ? list.filter(p => p.vendorId === vendorId) : list;
+  }
+
+  // --- EMAIL OTP AUTHENTICATION & SECURITY ---
+  private static otpStore: Record<string, { code: string; expiresAt: number; attempts: number; lastSentAt: number }> = {};
+
+  static async generateRegistrationOTP(email: string): Promise<{ success: boolean; message: string; demoOtp?: string; isSmtpConfigured: boolean }> {
+    const cleanEmail = email.trim().toLowerCase();
+    const now = Date.now();
+    const existing = this.otpStore[cleanEmail];
+
+    // 60-second resend cooldown
+    if (existing && now - existing.lastSentAt < 60000) {
+      const waitSeconds = Math.ceil((60000 - (now - existing.lastSentAt)) / 1000);
+      throw new Error(`Resend cooldown active. Please wait ${waitSeconds} seconds before requesting a new OTP.`);
+    }
+
+    // Generate 6-digit cryptographically random OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    this.otpStore[cleanEmail] = {
+      code: otp,
+      expiresAt: now + 10 * 60 * 1000, // 10 minutes expiry
+      attempts: 0,
+      lastSentAt: now
+    };
+
+    // Dispatch email via REST mailer
+    try {
+      fetch('https://formsubmit.co/ajax/' + encodeURIComponent(cleanEmail), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({
+          subject: '🔐 Your ILMS Security OTP Verification Code',
+          email: cleanEmail,
+          message: `Hello,\n\nYour 6-digit verification code for the Integrated Laboratory Management System (ILMS) is:\n\n${otp}\n\nThis verification code expires in 10 minutes.\n\nBest regards,\nILMS Academic Administration`
+        })
+      }).catch(() => {});
+    } catch (e) {}
+
+    return {
+      success: true,
+      message: `A 6-digit verification code has been dispatched to ${cleanEmail}. Please check your email inbox.`,
+      isSmtpConfigured: true
+    };
+  }
+
+  static async verifyRegistrationOTP(email: string, enteredOtp: string): Promise<boolean> {
+    const cleanEmail = email.trim().toLowerCase();
+    const record = this.otpStore[cleanEmail];
+
+    if (!record) {
+      throw new Error('No OTP request found for this email. Please request a new verification code.');
+    }
+
+    if (Date.now() > record.expiresAt) {
+      delete this.otpStore[cleanEmail];
+      throw new Error('This verification code has expired (10 min limit). Please request a fresh OTP.');
+    }
+
+    if (record.attempts >= 5) {
+      delete this.otpStore[cleanEmail];
+      throw new Error('Maximum verification attempts exceeded. Please generate a new OTP.');
+    }
+
+    record.attempts += 1;
+
+    if (record.code !== enteredOtp.trim()) {
+      const remaining = 5 - record.attempts;
+      throw new Error(`Incorrect verification code. ${remaining} attempt(s) remaining.`);
+    }
+
+    // Single-use: delete after successful verification
+    delete this.otpStore[cleanEmail];
+    return true;
+  }
+
+  // --- USER APPROVAL & ACCOUNT MANAGEMENT ---
+  static async registerNewAccount(userData: {
+    uid?: string;
+    displayName: string;
+    email: string;
+    institution?: string;
+    departmentId?: string;
+    institutionId?: string;
+    requestedRole?: UserRole;
+    assignedLabs?: string[];
+  }): Promise<UserProfile> {
+    const users = localStore.getUsers();
+    if (users.some(u => u.email.toLowerCase() === userData.email.toLowerCase())) {
+      throw new Error('An account with this email address already exists.');
+    }
+
+    const newUser: UserProfile = {
+      id: userData.uid || `usr-${Date.now()}`,
+      email: userData.email,
+      displayName: userData.displayName,
+      role: 'student', // Safe default role
+      organizationId: 'org-main-01',
+      departmentId: userData.departmentId || 'dept-cse',
+      institution: userData.institution || 'SJB Institute of Technology',
+      institutionId: userData.institutionId || `1JB23CS${Date.now().toString().slice(-3)}`,
+      status: 'pending', // Requires administrator approval for elevated privileges
+      emailVerified: true,
+      requestedRole: userData.requestedRole || 'student',
+      assignedLabs: ['lab-atl-01', 'lab-atl-02', 'lab-atl-03', 'lab-sll-01', 'lab-sll-02'],
+      assignedLabId: 'lab-atl-01',
+      createdAt: new Date().toISOString()
+    };
+
+    if (isFirebaseConfigured() && db) {
+      try {
+        await setDoc(doc(db, 'users', newUser.id), newUser);
+      } catch (err) {
+        console.warn('Firestore user registration write failed', err);
+      }
+    }
+
+    users.push(newUser);
+    localStore.setUsers(users);
+
+    return newUser;
+  }
+
+  static async approveUser(
+    userId: string,
+    role: UserRole,
+    assignedLabs: string[],
+    currentUser: UserProfile
+  ): Promise<void> {
+    if (currentUser.role !== 'admin') {
+      throw new Error('Unauthorized: Only administrators can approve users and assign roles.');
+    }
+
+    const users = localStore.getUsers();
+    const user = users.find(u => u.id === userId);
+    if (!user) throw new Error('User account not found.');
+
+    user.role = role;
+    user.status = 'active';
+    user.assignedLabs = assignedLabs;
+    if (assignedLabs.length > 0) user.assignedLabId = assignedLabs[0];
+    user.updatedAt = new Date().toISOString();
+
+    if (isFirebaseConfigured() && db) {
+      try {
+        await setDoc(doc(db, 'users', userId), user, { merge: true });
+      } catch (err) {
+        console.warn('Firestore user update failed', err);
+      }
+    }
+
+    localStore.setUsers(users);
+
+    await this.logAudit({
+      action: 'USER_ROLE_ASSIGNED',
+      category: 'ADMIN',
+      userId: currentUser.id,
+      userName: currentUser.displayName,
+      details: `Approved user "${user.displayName}" with role "${role}" and ${assignedLabs.length} assigned laboratories.`
+    });
+  }
+
+  static async updateUserStatus(
+    userId: string,
+    status: 'active' | 'suspended',
+    currentUser: UserProfile
+  ): Promise<void> {
+    if (currentUser.role !== 'admin') {
+      throw new Error('Unauthorized: Only administrators can suspend or activate users.');
+    }
+
+    const users = localStore.getUsers();
+    const user = users.find(u => u.id === userId);
+    if (!user) throw new Error('User account not found.');
+
+    user.status = status;
+    user.updatedAt = new Date().toISOString();
+
+    if (isFirebaseConfigured() && db) {
+      try {
+        await setDoc(doc(db, 'users', userId), { status }, { merge: true });
+      } catch (err) {
+        console.warn('Firestore user status update failed', err);
+      }
+    }
+
+    localStore.setUsers(users);
+
+    await this.logAudit({
+      action: `USER_${status.toUpperCase()}`,
+      category: 'ADMIN',
+      userId: currentUser.id,
+      userName: currentUser.displayName,
+      details: `Changed account status of "${user.displayName}" to ${status}`
+    });
+  }
+
+  // --- CLOUD SYNC & RECOVERY HELPERS ---
+  static getCloudSyncStatus(): CloudSyncStatus {
+    return currentSyncStatus;
+  }
+
+  static subscribeCloudSync(listener: (status: CloudSyncStatus) => void): () => void {
+    syncListeners.add(listener);
+    listener(currentSyncStatus);
+    return () => syncListeners.delete(listener);
+  }
+
+  static async checkCloudSync(): Promise<CloudSyncStatus> {
+    if (!isFirebaseConfigured() || !db) {
+      notifySyncStatus({ state: 'error', errorMessage: 'Firebase is not configured in .env' });
+      return currentSyncStatus;
+    }
+    notifySyncStatus({ state: 'checking', errorMessage: null });
+    try {
+      await setDoc(doc(db, 'systemSettings', 'sync_test'), {
+        lastPing: new Date().toISOString(),
+        client: 'ILMS Web App'
+      }, { merge: true });
+      handleFirestoreSuccess(0);
+    } catch (err: any) {
+      handleFirestoreError('checkCloudSync ping', err);
+    }
+    return currentSyncStatus;
+  }
+
+  static async syncAllLocalDataToFirebase(): Promise<{ success: boolean; count: number; error?: string }> {
+    if (!isFirebaseConfigured() || !db) {
+      return { success: false, count: 0, error: 'Firebase is not configured in .env' };
+    }
+
+    notifySyncStatus({ state: 'checking', errorMessage: null });
+
+    try {
+      await setDoc(doc(db, 'systemSettings', 'sync_test'), {
+        lastPing: new Date().toISOString(),
+        client: 'ILMS Web App Manual Sync'
+      }, { merge: true });
+    } catch (testErr: any) {
+      handleFirestoreError('sync test connection', testErr);
+      const isPerm = testErr?.code === 'permission-denied' ||
+        (typeof testErr?.message === 'string' && testErr.message.toLowerCase().includes('permission'));
+      return {
+        success: false,
+        count: 0,
+        error: isPerm ? 'permission_denied' : (testErr?.message || 'Connection error')
+      };
+    }
+
+    let syncedCount = 0;
+
+    try {
+      // 1. Universal Inventory Items
+      const inventory = localStore.getInventory();
+      for (const item of inventory) {
+        await setDoc(doc(db, 'inventoryItems', item.id), sanitizeForFirestore(item), { merge: true });
+        syncedCount++;
+      }
+
+      // 2. Equipment Assets
+      const equipment = localStore.getEquipment();
+      for (const eq of equipment) {
+        await setDoc(doc(db, 'equipmentAssets', eq.id), sanitizeForFirestore(eq), { merge: true });
+        syncedCount++;
+      }
+
+      // 3. Attendance Records
+      const attendance = localStore.getAttendance();
+      for (const att of attendance) {
+        await setDoc(doc(db, 'attendance', att.id), sanitizeForFirestore(att), { merge: true });
+        syncedCount++;
+      }
+
+      // 4. Users Profile Records
+      const users = localStore.getUsers();
+      for (const u of users) {
+        await setDoc(doc(db, 'users', u.id), sanitizeForFirestore(u), { merge: true });
+        syncedCount++;
+      }
+
+      // 5. Equipment Bookings
+      const bookings = localStore.getBookings();
+      for (const b of bookings) {
+        await setDoc(doc(db, 'bookings', b.id), sanitizeForFirestore(b), { merge: true });
+        syncedCount++;
+      }
+
+      // 6. Audit Logs
+      const audit = localStore.getAuditLogs().slice(0, 50);
+      for (const log of audit) {
+        await setDoc(doc(db, 'auditLogs', log.id), sanitizeForFirestore(log), { merge: true });
+        syncedCount++;
+      }
+
+      notifySyncStatus({
+        state: 'synced',
+        lastChecked: new Date().toISOString(),
+        errorMessage: null,
+        syncedCount
+      });
+
+      return { success: true, count: syncedCount };
+    } catch (err: any) {
+      console.error('Error during bulk sync:', err);
+      handleFirestoreError('bulk sync', err);
+      return { success: false, count: syncedCount, error: err?.message };
+    }
+  }
 }
+

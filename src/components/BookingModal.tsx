@@ -103,26 +103,31 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
+      <div className="bg-white border border-[#E4E7F0] rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col text-[#172033]">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-800/50">
-          <div className="flex items-center space-x-2">
-            <Calendar className="w-5 h-5 text-sky-400" />
-            <h3 className="font-semibold text-slate-100">Reserve Equipment Session</h3>
+        <div className="flex items-center justify-between p-5 border-b border-[#E4E7F0] bg-white">
+          <div className="flex items-center space-x-2.5">
+            <div className="p-2 rounded-xl bg-cyan-50 border border-cyan-200 text-cyan-800">
+              <Calendar className="w-5 h-5 text-cyan-600" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-lg text-[#172033]">Reserve Equipment Session</h3>
+              <p className="text-xs text-[#5B6478]">Schedule apparatus usage and verify technician clearance</p>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 text-slate-400 hover:text-slate-100 rounded-lg hover:bg-slate-800 transition"
+            className="p-1.5 text-[#5B6478] hover:text-[#172033] rounded-xl hover:bg-[#F5F6FC] transition"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {errorMsg && (
-            <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg text-rose-300 text-xs flex items-start space-x-2">
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs flex items-start space-x-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{errorMsg}</span>
             </div>
@@ -130,14 +135,14 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
           {/* Equipment selector */}
           <div>
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+            <label className="text-xs font-bold text-[#172033] block mb-1.5">
               Equipment Asset
             </label>
             <select
               value={selectedEquipId}
               onChange={(e) => setSelectedEquipId(e.target.value)}
               required
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+              className="w-full bg-[#F5F6FC] border border-[#E4E7F0] rounded-2xl px-3.5 py-2.5 text-[#172033] text-xs sm:text-sm font-medium focus:outline-none focus:border-[#18BDF5]"
             >
               {equipmentList.map((eq) => (
                 <option key={eq.id} value={eq.id}>
@@ -149,10 +154,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
           {/* Status warning if maintenance blocked */}
           {isBlocked && (
-            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-300 text-xs flex items-start space-x-2">
-              <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+            <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl text-amber-800 text-xs flex items-start space-x-2">
+              <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
               <div>
-                <span className="font-semibold">Safety / Maintenance Lock Active:</span> This instrument cannot be booked until required maintenance is cleared by an authorized technician.
+                <span className="font-bold">Safety / Maintenance Lock Active:</span> This instrument cannot be booked until required maintenance is cleared by an authorized technician.
               </div>
             </div>
           )}
@@ -160,7 +165,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
           {/* Timeslot Picker */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+              <label className="text-xs font-bold text-[#172033] block mb-1">
                 Start Date
               </label>
               <input
@@ -168,11 +173,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 required
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                className="w-full bg-[#F5F6FC] border border-[#E4E7F0] rounded-2xl px-3 py-2 text-[#172033] text-xs sm:text-sm font-medium focus:outline-none focus:border-[#18BDF5]"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+              <label className="text-xs font-bold text-[#172033] block mb-1">
                 Start Time
               </label>
               <input
@@ -180,14 +185,14 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
                 required
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                className="w-full bg-[#F5F6FC] border border-[#E4E7F0] rounded-2xl px-3 py-2 text-[#172033] text-xs sm:text-sm font-medium focus:outline-none focus:border-[#18BDF5]"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+              <label className="text-xs font-bold text-[#172033] block mb-1">
                 End Date
               </label>
               <input
@@ -195,11 +200,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 required
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                className="w-full bg-[#F5F6FC] border border-[#E4E7F0] rounded-2xl px-3 py-2 text-[#172033] text-xs sm:text-sm font-medium focus:outline-none focus:border-[#18BDF5]"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+              <label className="text-xs font-bold text-[#172033] block mb-1">
                 End Time
               </label>
               <input
@@ -207,15 +212,15 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
                 required
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                className="w-full bg-[#F5F6FC] border border-[#E4E7F0] rounded-2xl px-3 py-2 text-[#172033] text-xs sm:text-sm font-medium focus:outline-none focus:border-[#18BDF5]"
               />
             </div>
           </div>
 
           {/* Purpose & Project */}
           <div>
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
-              Experiment / Booking Purpose <span className="text-rose-400">*</span>
+            <label className="text-xs font-bold text-[#172033] block mb-1.5">
+              Experiment / Booking Purpose <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
@@ -223,12 +228,12 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               onChange={(e) => setPurpose(e.target.value)}
               placeholder="e.g. UV-Vis spectroscopic kinetics of synthesized dye"
               required
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+              className="w-full bg-[#F5F6FC] border border-[#E4E7F0] rounded-2xl px-3.5 py-2.5 text-[#172033] text-xs sm:text-sm placeholder-[#5B6478] focus:outline-none focus:border-[#18BDF5]"
             />
           </div>
 
           <div>
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+            <label className="text-xs font-bold text-[#172033] block mb-1.5">
               Course / Project Code (Optional)
             </label>
             <input
@@ -236,23 +241,23 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               value={projectOrExperiment}
               onChange={(e) => setProjectOrExperiment(e.target.value)}
               placeholder="e.g. CHEM-301-LAB-B or NSF-GRANT-2026"
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+              className="w-full bg-[#F5F6FC] border border-[#E4E7F0] rounded-2xl px-3.5 py-2.5 text-[#172033] text-xs sm:text-sm placeholder-[#5B6478] focus:outline-none focus:border-[#18BDF5]"
             />
           </div>
 
           {/* Footer Actions */}
-          <div className="pt-2 flex justify-end space-x-3">
+          <div className="pt-3 flex justify-end space-x-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition"
+              className="px-4 py-2.5 text-xs font-bold text-[#5B6478] hover:text-[#172033] rounded-2xl hover:bg-[#F5F6FC] transition border border-[#E4E7F0]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting || isBlocked}
-              className="px-5 py-2 bg-sky-600 hover:bg-sky-500 disabled:opacity-40 text-white rounded-lg text-sm font-medium transition flex items-center space-x-2 shadow-lg shadow-sky-600/20"
+              className="px-5 py-2.5 bg-[#18BDF5] hover:bg-[#38BDF8] disabled:opacity-40 text-[#172033] rounded-2xl text-xs font-black transition flex items-center space-x-2 shadow-md"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>{isSubmitting ? 'Checking schedule...' : 'Confirm Reservation'}</span>

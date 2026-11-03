@@ -7,10 +7,16 @@ export interface UserProfile {
   role: UserRole;
   organizationId: string;
   departmentId?: string;
+  institution?: string;
+  institutionId?: string; // Student ID or Employee ID
+  status?: 'active' | 'pending' | 'suspended';
+  emailVerified?: boolean;
+  requestedRole?: UserRole;
   assignedLabs: string[]; // List of laboratory IDs
   assignedLabId?: string; // Active lab selection
   phoneNumber?: string;
   avatarUrl?: string;
+  lastLoginAt?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -310,3 +316,155 @@ export interface AuditLogEntry {
   ipAddress?: string;
   timestamp: string;
 }
+
+export interface ComputerWorkstation {
+  id: string;
+  workstationTag: string;
+  laboratoryId: string;
+  cpu: string;
+  ram: string;
+  gpu?: string;
+  storage: string;
+  os: string;
+  status: 'WORKING' | 'FAULTY' | 'UNDER_MAINTENANCE';
+  reportedFault?: string;
+  lastInspection: string;
+  assignedTechnician?: string;
+}
+
+export interface PracticalSession {
+  id: string;
+  title: string;
+  courseCode: string;
+  laboratoryId: string;
+  facultyId: string;
+  facultyName: string;
+  groupName: string;
+  studentCount: number;
+  date: string;
+  startTime: string;
+  endTime: string;
+  requiredEquipment: string[];
+  status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED';
+  observations?: string;
+  attendanceCount?: number;
+}
+
+export interface SmartHealthScore {
+  overall: number; // 0-100
+  availabilityScore: number;
+  maintenanceScore: number;
+  stockScore: number;
+  incidentScore: number;
+  summary: string;
+}
+
+export interface FaultTicket {
+  id: string;
+  equipmentId: string;
+  equipmentName: string;
+  laboratoryId: string;
+  reportedBy: string;
+  reportedByName: string;
+  problemCategory: string;
+  description: string;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  assignedTechnicianId?: string;
+  assignedTechnicianName?: string;
+  status: 'OPEN' | 'INVESTIGATING' | 'REPAIR_SCHEDULED' | 'RESOLVED';
+  photoUrl?: string;
+  reportedAt: string;
+  resolvedAt?: string;
+  timeline: { stage: string; timestamp: string; note?: string }[];
+}
+
+export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
+
+export interface StudentAttendanceItem {
+  studentId: string;
+  studentName: string;
+  institutionId: string;
+  status: AttendanceStatus;
+  checkInTime?: string;
+  remarks?: string;
+}
+
+export interface AttendanceRecord {
+  id: string;
+  laboratoryId: string;
+  laboratoryName: string;
+  sessionId?: string;
+  sessionTitle: string;
+  courseCode: string;
+  classBatch: string;
+  date: string; // YYYY-MM-DD
+  facultyId: string;
+  facultyName: string;
+  students: StudentAttendanceItem[];
+  totalStudents: number;
+  presentCount: number;
+  absentCount: number;
+  lateCount: number;
+  excusedCount: number;
+  attendancePercentage: number;
+  isConfirmed: boolean;
+  confirmedAt?: string;
+  corrections?: {
+    studentId: string;
+    studentName: string;
+    oldStatus: AttendanceStatus;
+    newStatus: AttendanceStatus;
+    reason: string;
+    updatedBy: string;
+    updatedAt: string;
+  }[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type VendorVerificationStatus = 'REGISTERED' | 'DOCUMENTS_PENDING' | 'VERIFIED' | 'EXPIRED' | 'SUSPENDED';
+
+export interface CertifiedVendor {
+  id: string;
+  name: string;
+  companyRegistrationNumber: string;
+  verificationStatus: VendorVerificationStatus;
+  certificationDetails: string;
+  certificationDocUrl?: string;
+  verifiedBy?: string;
+  verifiedByName?: string;
+  verificationDate?: string;
+  verificationExpiryDate?: string;
+  categories: string[];
+  contactPerson: string;
+  email: string;
+  phone: string;
+  address: string;
+  serviceAreas: string[];
+  warrantyPolicy: string;
+  supportContact: string;
+  rating: number; // 1-5
+  totalOrdersCompleted: number;
+  createdAt: string;
+}
+
+export interface VendorCatalogProduct {
+  id: string;
+  vendorId: string;
+  vendorName: string;
+  name: string;
+  category: string;
+  manufacturer: string;
+  modelNumber: string;
+  specifications: string;
+  unitPrice: number;
+  currency: string;
+  availability: 'IN_STOCK' | 'LEAD_TIME_REQUIRED' | 'DISCONTINUED';
+  leadTimeDays: number;
+  minOrderQuantity: number;
+  warrantyMonths: number;
+  docUrl?: string;
+  verifiedProduct: boolean;
+}
+
+

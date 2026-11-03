@@ -1,202 +1,177 @@
-# ILMS — Multi-Laboratory Inventory and Lab Management System
+# ILMS — Intelligent Laboratory Management System
+## Multi-Laboratory Inventory, Asset, Practical & Safety Management Platform
 
-> **Enterprise Full-Stack Web App • Firebase Backend • Installable Mobile PWA • Capacitor Android Packaging Ready**
+> **Enterprise Full-Stack Application • Firebase Backend • Responsive Mobile PWA • Downloadable Distribution**
 
-ILMS is a comprehensive, secure, multi-laboratory inventory, asset, booking, and safety management platform built for universities, research institutes, and engineering facilities. It unifies operations across scientific, computing, mechanical, civil, and specialized research laboratories under one cohesive platform.
-
----
-
-## 🏛️ System Architecture
-
-ILMS implements a **Three-Layer Multi-Laboratory Architecture**:
-
-1. **Layer A — Shared Platform:**
-   - Universal inventory tracking with movement ledgers and negative stock prevention.
-   - Equipment asset registry with maintenance blocking and status tracking.
-   - Concurrency-safe equipment booking and lab scheduling calendar.
-   - Equipment checkout (Issue & Return) with physical inspection sign-offs.
-   - Maintenance, calibration tracking, and service unlock workflows.
-   - Multi-level procurement and purchase requisition approvals.
-   - Laboratory safety inspection and hazard incident tracking.
-   - Live telemetry dashboard and immutable compliance audit logs.
-   - Printable QR labels and camera-based barcode/QR scanning.
-
-2. **Layer B — Specialized Laboratory Modules:**
-   - **Physics:** Optical tables, Michelson interferometers, laser safety class (Class 3R), experiment observation protocols.
-   - **Chemistry:** Chemical inventory, CAS registry numbers, GHS hazard classification (Corrosive, Flammable, Toxic), PubChem SDS linkages, fume hood face-velocity monitoring.
-   - **Biology:** Specimen registry, -80°C ultra-low temperature cryo-storage, BSL-2 protocol containment.
-   - **Computer Science & IT:** AI GPU server cluster (NVIDIA DGX Station A100), software license seat management, network hardware.
-   - **Electronics & Electrical:** Microcontroller kits (ESP32-S3, STM32), component consumption, ESD workbench rework stations.
-   - **Mechanical Engineering:** Haas 5-axis CNC machining centers, spindle run hour counters, cutting tool crib.
-   - **Civil Engineering:** Universal Testing Machine (UTM 1000kN compression frame), geotechnical triaxial shear apparatus, Leica total stations.
-   - **Biotechnology:** Tuttnauer autoclave sterilization logs, Sartorius 5L bioreactor fermentation monitoring.
-   - **Additional Modules:** Environmental Science, Automobile Engineering, Medical Education, Agricultural Science.
-
-3. **Layer C — Configurable Laboratory Scope & RBAC:**
-   - Role-Based Access Control: `admin`, `labManager`, `faculty`, `technician`, `student`.
-   - Dynamic laboratory switching with authorized access scopes.
-   - Real-time online/offline network detection and responsive mobile navigation.
+ILMS (Intelligent Laboratory Management System) is an enterprise-grade academic, research, and engineering laboratory administration platform. It unifies multi-disciplinary laboratory facilities (Physics, Chemistry, Biology, Computer Science, Electronics, Mechanical, Civil, Biotechnology) with certified vendor procurement, real-time scheduling, practical attendance tracking, equipment calibration, and OSHA/EHS incident monitoring.
 
 ---
 
-## 🚀 Quick Start Guide
+## 🌟 Key Features & Functional Modules
 
-### Prerequisites
-- Node.js `v20+` or `v24+`
-- npm `v10+` or `v11+`
+### 1. Unified Schedule & Schedule Planner
+- **Internal Scheduling Engine:** Uses actual timestamps, system timezones, and Firestore records (strictly independent of third-party calendar mandates).
+- **Multi-View Timetable:** Month, Week, Day, and chronological Agenda list views.
+- **Disciplinary Filter Bar:** One-click filtering across Physics, Chemistry, Biology, Computer Science, Electronics, Mechanical, Civil, Biotechnology, and General Laboratories.
+- **Event Classification:** Practical classes, faculty lecture sessions, workstation reservations, calibration appointments, and EHS safety audits.
+- **Export Capabilities:** Download standards-compliant iCalendar (`.ics`) schedules anytime.
 
-### 1. Installation
-Clone the workspace and install project dependencies:
+### 2. Faculty Attendance Management Module
+- **Direct Practical Tracking:** Select assigned laboratory, class section, and scheduled practical session.
+- **Live Participation Metrics:** Real-time calculation of Present, Absent, Late, Excused, and Total Attendance Rate (%).
+- **Authorized Audit Corrections:** Prevent unauthorized duplicate entries; track correction reasons, timestamps, and faculty signatures.
+- **Accreditation Ready:** Export official attendance ledgers to CSV for university registrar compliance (75% minimum participation enforcement).
+
+### 3. Certified Vendor Directory & Procurement Portal
+- **Institutional Marketplace:** College-approved directory of certified suppliers for chemical reagents, analytical apparatus, electronic modules, and safety PPE.
+- **Verification Governance:** Strict distinction between *Registered*, *Documents Pending*, *Verified*, *Expired*, and *Suspended* statuses. Only authorized administrators can certify vendors.
+- **Multi-Tier Requisition Lifecycle:** Product Selection → Purchase Request → Department Review → Formal Approval → Purchase Order (PO) Issuance → Goods Physical Receipt → Automated Universal Inventory Stock Credit.
+- **Self-Approval Safeguards:** Users cannot approve their own financial purchase requests.
+
+### 4. Interactive Clickable Reports & Dark Incident Cards
+- **Clickable Executive Reports:** Low Stock & Material Depletion, Equipment Health & Availability, Faculty Attendance Audit, and Maintenance SLA Compliance.
+- **Exploratory Modals:** Inspect calculation formulas, data sources, quantitative KPIs, raw data breakdowns, and recommended institutional actions.
+- **Dark Incident Card System (`#10182B`):** High-contrast OSHA/EHS incident cards displaying severity indicators (Critical, High, Medium, Low), immediate containment actions, resolution timeline, and authorized technician sign-off.
+
+### 5. Multi-Role Dashboards & Role-Based Access Control (RBAC)
+- **Administrator Dashboard:** Cross-campus KPI telemetry, total computer lab workstation health, low-stock alerts, pending user approvals, and compliance overview.
+- **Lab Manager Dashboard:** Assigned laboratory roster, staff scheduling, booking queue, stock alerts, and incident resolution.
+- **Faculty Dashboard:** Assigned practical sessions, attendance compliance tracking, experiment records, and workstation reservations.
+- **Technician Dashboard:** Issue & return loans, overdue checkouts, preventative maintenance intervals, calibration stickers, and QR scanning.
+- **Student Dashboard:** Enrolled practical timetable, attendance percentage, active equipment loans, and self-service reservation requests.
+
+### 6. Laboratory Selector & Management
+- **Top-Right Navigation Selector:** Displays the currently active laboratory and type with swift search and switching.
+- **Facility Cards:** Displays live resource counts (working computers for IT labs, apparatus counts for scientific labs) with deep-dive inspection tabs.
+
+---
+
+## 📦 How to Run on Another Windows Computer
+
+### Quick Setup (Automated via Script)
+1. Extract `ILMS-Complete-Source.zip` into any folder on the computer.
+2. Double-click `setup-windows.bat`:
+   - Automatically checks for Node.js (`v18+` or `v20+`).
+   - Copies `.env.example` to `.env` if not already present.
+   - Installs all dependencies cleanly using `package-lock.json`.
+   - Runs the automated validation test suite.
+   - Launches the web application at `http://localhost:5173` in your default browser.
+3. For subsequent launches, simply double-click `run-windows.bat`.
+
+### Manual Setup via Terminal
 ```bash
+# 1. Unzip the package and enter directory
+cd ILMS_SEPM
+
+# 2. Copy environment file (pre-configured for local transactional fallback)
+cp .env.example .env
+
+# 3. Install dependencies
 npm install
-```
 
-### 2. Local Development Server
-Launch the development server:
-```bash
+# 4. Run automated test suite
+npm test
+
+# 5. Launch development server
 npm run dev
 ```
-Open [http://localhost:5173](http://localhost:5173) in your browser.
-
-### 3. Running Automated Tests
-Execute the Vitest automated test suite:
-```bash
-npm test
-```
-The test suite validates:
-- Role-based permissions (students blocked from inventory creation).
-- Atomic stock movements and negative-stock balance prevention.
-- Concurrency-safe equipment booking and overlapping slot collision prevention.
-- Maintenance-blocked equipment reservation rejection.
-- Issue and return workflows with condition sign-offs.
-- Procurement self-approval restrictions.
-- Real-time dashboard analytics aggregation.
-
-### 4. Production Build
-Generate the production-optimized static bundle:
-```bash
-npm run build
-```
-Output is compiled cleanly into the `dist/` directory.
 
 ---
 
-## 🔌 Firebase Backend Integration
+## 🔌 Firebase Backend Configuration & Deployment
 
 ILMS features a **Dual-Engine Architecture**:
-- **Live Firebase Mode:** Connects to real Firebase Authentication, Cloud Firestore, Cloud Storage, and Cloud Functions.
-- **Resilient Persistent Engine (Default Demo Mode):** In development or when Firebase credentials are not yet configured, ILMS runs seamlessly out of the box using a browser-persisted transactional engine pre-seeded with complete data for 7+ laboratories, allowing full end-to-end testing without external setup.
+- **Live Firebase Engine:** Full integration with Firebase Auth, Cloud Firestore, Cloud Storage, and Cloud Functions.
+- **Local Transactional Fallback Engine:** Pre-seeded out of the box with 7+ multi-disciplinary laboratories, inventory items, equipment, and audit logs. Allows full functionality without immediate cloud credentials.
 
-### Connecting Your Real Firebase Project:
-
-1. Create a Firebase project at the [Firebase Console](https://console.firebase.google.com/).
-2. Enable:
-   - **Authentication** (Email/Password provider).
-   - **Cloud Firestore** (Production mode).
-   - **Cloud Storage** (Default bucket).
-   - **Cloud Functions** (Node.js 20).
-3. Copy your Web App config credentials into `.env`:
+### Step-by-Step Firebase Setup:
+1. Go to the [Firebase Console](https://console.firebase.google.com/) and create a new project.
+2. Under **Build > Authentication**, enable the **Email/Password** sign-in provider.
+3. Under **Build > Firestore Database**, click **Create Database** (Start in Production Mode).
+4. Under **Build > Storage**, enable Cloud Storage.
+5. In Project Settings, create a Web App and copy your credentials into `.env`:
 ```env
 VITE_FIREBASE_API_KEY=AIzaSy...
 VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
 VITE_FIREBASE_PROJECT_ID=your-project
 VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=...
-VITE_FIREBASE_APP_ID=1:...
+VITE_FIREBASE_MESSAGING_SENDER_ID=1234567890
+VITE_FIREBASE_APP_ID=1:1234567890:web:abcdef
 ```
-4. Deploy Firestore Rules and Indexes:
+
+### Deploying Security Rules & Cloud Functions:
 ```bash
-firebase deploy --only firestore:rules,firestore:indexes,storage
-```
-5. Deploy Cloud Functions:
-```bash
+# Install Firebase CLI globally
+npm install -g firebase-tools
+
+# Login to Firebase
+firebase login
+
+# Associate project
+firebase use your-project-id
+
+# Deploy Firestore and Storage security rules
+firebase deploy --only firestore:rules,storage
+
+# Deploy Cloud Functions
 cd functions
 npm install
-npm run deploy
-```
-
-### Using Local Firebase Emulators:
-```bash
-# Start Firebase Emulator Suite
-firebase emulators:start
-
-# Set in .env:
-VITE_USE_FIREBASE_EMULATORS=true
-```
-
----
-
-## 📱 Mobile App (PWA) & Installation Instructions
-
-ILMS is engineered as a fully compliant, installable **Progressive Web App (PWA)**:
-- **Standalone Display Mode:** Runs full-screen without browser address bars on Android, iOS, and Desktop.
-- **Service Worker (`public/sw.js`):** Pre-caches the application shell and static assets.
-- **Offline Protection:** Displays a branded offline fallback screen (`public/offline.html`) if connection drops. Critical write operations (approvals, stock decrements) are protected from unsynchronized conflicts.
-- **Real-Time Network Status:** Real-time Online / Offline status badge in the navigation bar.
-
-### How to Install on Android:
-1. Open ILMS in Google Chrome on your Android smartphone.
-2. Either click the **"Install App"** button in the top navigation bar or tap browser menu (**⋮**) -> **"Install App"** (or **"Add to Home screen"**).
-3. The ILMS app icon will appear on your device's home screen and app drawer.
-
-### How to Install on iOS (iPhone / iPad):
-1. Open ILMS in Safari.
-2. Tap the **Share** button (box with upward arrow).
-3. Scroll down and tap **"Add to Home Screen"**.
-
-### How to Install on Desktop (Chrome / Edge):
-1. In Google Chrome or Microsoft Edge, look for the install icon in the URL bar (or click **"Install App"** in the ILMS navigation bar).
-2. Click **Install**. ILMS opens as a dedicated desktop application window.
-
----
-
-## 🤖 Optional Android APK Generation via Capacitor
-
-To produce a native Android `.apk` or `.aab` package:
-
-1. Install Capacitor CLI and Android platform:
-```bash
-npm install -D @capacitor/cli @capacitor/core @capacitor/android --legacy-peer-deps
-```
-2. Initialize and add the Android project:
-```bash
-npx cap init ILMS edu.institution.ilms --web-dir dist
 npm run build
-npx cap add android
+cd ..
+firebase deploy --only functions
 ```
-3. Sync build assets:
-```bash
-npx cap sync android
-```
-4. Open the project in Android Studio:
-```bash
-npx cap open android
-```
-5. In Android Studio:
-   - Select **Build** -> **Build Bundle(s) / APK(s)** -> **Build APK(s)** for a debug APK.
-   - For a production release, select **Generate Signed Bundle / APK** and supply your institution's release keystore credentials.
+
+### Creating Your First Administrator Account Securely:
+1. Open the application and click **Create Account** on the login page.
+2. Fill out your details (name, email, password) and select `Administrator` as requested role.
+3. Because public registration assigns a safe `pending` state, open the Firebase Console:
+   - Go to **Firestore > users collection**.
+   - Find your user document and update: `role = "admin"` and `status = "active"`.
+4. Sign in with your administrator account. You now have access to `/users` to approve faculty, managers, and technicians directly from the UI.
 
 ---
 
-## 👥 Demo User Profiles & Quick Role Switcher
+## 📱 Mobile Experience & PWA Installation
 
-For instant testing, ILMS provides a built-in role switcher in the top navigation bar:
-
-| Role | Demo User | Permissions & Scope |
-| :--- | :--- | :--- |
-| **Admin** | `Dr. Sarah Jenkins` | Full platform access, laboratory registry, multi-department reports, user role administration |
-| **Lab Manager** | `Prof. Marcus Vance` | Chemistry lab manager, purchase approvals, equipment status locks, booking authorizations |
-| **Senior Technician** | `Elena Alvarez` | Multi-lab technician (Chem & Physics), inventory movements, equipment issue/return sign-offs, maintenance completion |
-| **Faculty / Researcher** | `Dr. Kavita Raman` | Equipment booking reservations, research protocols, experiment logbooks |
-| **Student** | `Alex Thorne` | Equipment reservation requests, borrower loans viewing, restricted administrative access |
+ILMS is a certified Progressive Web Application (PWA):
+- **Desktop (Chrome/Edge):** Click the install icon in the URL address bar or the "Install App" button in the navigation header.
+- **Android:**
+  1. Open the application URL in Google Chrome on your phone.
+  2. Tap the browser menu (three dots) and select **Install app** or **Add to Home screen**.
+  3. The app will launch in standalone full-screen mode with native mobile bottom navigation.
+- **iOS:** Open in Safari, tap the Share button, and select **Add to Home Screen**.
 
 ---
 
-## 🔒 Security & Data Integrity Controls
+## 🧪 Testing & Production Build
 
-- **Negative-Stock Prevention:** Stock movements verify that `currentQuantity + changeAmount >= 0`. Deductions that exceed available stock are blocked.
-- **Booking Conflict Engine:** Prevents double-booking overlapping time windows for the same equipment asset.
-- **Maintenance Block Enforcement:** Instruments marked as `MAINTENANCE_BLOCKED` or `UNDER_MAINTENANCE` cannot be booked until signed off by a technician.
-- **Procurement Self-Approval Block:** Lab Managers cannot approve their own purchase requisitions, enforcing strict separation of duties.
-- **Tamper-Evident Audit Ledger:** All inventory movements, asset condition changes, and approval decisions write immutable audit logs with user IDs and timestamps.
-- **Firestore Security Rules:** `firestore.rules` enforces authentication, role verification, and laboratory scoping on all database collections.
+### Running Automated Test Suite
+```bash
+npm test
+```
+Validates:
+- Role-based authorization rules (students blocked from stock adjustments).
+- Atomic stock receipts, consumptions, and negative-stock balance prevention.
+- Concurrency-safe workstation and equipment booking conflict detection.
+- Equipment checkout and condition sign-off.
+- Self-approval governance restrictions in procurement.
+- Faculty practical attendance recording and correction audit logging.
+- Safe user onboarding and admin approval workflows.
+- Certified vendor accreditation verification rules.
+
+### Compiling Production Build
+```bash
+npm run build
+```
+Build output is generated cleanly into the `dist/` directory ready for deployment on Firebase Hosting, Vercel, Netlify, or any standard HTTP web server.
+
+---
+
+## 🛠️ Technology Stack
+- **Frontend Core:** React 19, TypeScript, Vite
+- **Styling & Design System:** Tailwind CSS, Custom Theme Tokens (`#9333EA`, `#A855F7`, `#4F7DFF`, `#10182B`, `#F7F7FC`)
+- **Icons & UI:** Lucide React, Glassmorphism, Rounded Cards
+- **Routing & Forms:** React Router v7, React Hook Form
+- **Charts:** Recharts
+- **Testing:** Vitest, Testing Library
+- **Backend:** Firebase Authentication, Cloud Firestore, Cloud Storage, Cloud Functions (Node.js 20)
