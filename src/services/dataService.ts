@@ -111,7 +111,7 @@ const sanitizeForFirestore = <T>(obj: T): T => {
   }
 };
 
-const STORAGE_KEY_PREFIX = 'ILMS_STORE_V4_';
+const STORAGE_KEY_PREFIX = 'ILMS_STORE_V5_';
 
 class LocalStoreManager {
   private memoryStore: Record<string, string> = {};

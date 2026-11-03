@@ -24,14 +24,18 @@ import {
   Coffee,
   UtensilsCrossed,
   ArrowRight,
-  BadgeCheck
+  BadgeCheck,
+  ShieldAlert,
+  User,
+  SlidersHorizontal,
+  Eye
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { DataService } from '../services/dataService';
-import { EquipmentBooking, PracticalSession, MaintenanceRecord, Laboratory } from '../types';
+import { EquipmentBooking, PracticalSession, MaintenanceRecord, Laboratory, UserProfile } from '../types';
 
 export const CalendarPage: React.FC = () => {
-  const { activeLab, currentUser, switchLaboratory } = useAuth();
+  const { activeLab, currentUser } = useAuth();
   const navigate = useNavigate();
 
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -45,25 +49,23 @@ export const CalendarPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
 
+  // Role Checks
+  const isStudent = currentUser.role === 'student';
+  const isFaculty = currentUser.role === 'faculty';
+  const isAdmin = currentUser.role === 'admin';
+  const isLabManager = currentUser.role === 'labManager';
+
+  // For faculty: Default to showing only classes they are taking
+  const [facultyOnlyMode, setFacultyOnlyMode] = useState<boolean>(() => isFaculty);
+
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDay, setSelectedDay] = useState<string>('ALL');
-  const [selectedDiscipline, setSelectedDiscipline] = useState<string>('ALL');
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [selectedFaculty, setSelectedFaculty] = useState<string>('ALL');
 
   const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const DAYS_SHORT = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-
-  const disciplines = [
-    'ALL',
-    'Computer Science',
-    'Electronics',
-    'Physics',
-    'Chemistry',
-    'Mechanical',
-    'Biotechnology'
-  ];
 
   // Load labs & events
   useEffect(() => {
@@ -81,11 +83,11 @@ export const CalendarPage: React.FC = () => {
         setSessions(ss);
         setMaintenances(mn);
 
-        // Default timetable to active lab if set, otherwise first lab
+        // Default timetable to active lab if set, otherwise ALL
         if (activeLab?.id) {
           setSelectedLabId(activeLab.id);
-        } else if (labs.length > 0) {
-          setSelectedLabId(labs[0].id);
+        } else {
+          setSelectedLabId('ALL');
         }
       } catch (err) {
         console.error('Failed to load schedule events:', err);
@@ -96,10 +98,52 @@ export const CalendarPage: React.FC = () => {
     loadData();
   }, [activeLab]);
 
+  // Keep faculty mode synced when role is faculty
+  useEffect(() => {
+    if (isFaculty) {
+      setFacultyOnlyMode(true);
+    }
+  }, [currentUser]);
+
+  // Check if a faculty user is taking a given session
+  const isCurrentUserTakingClass = (s: PracticalSession): boolean => {
+    if (!currentUser || !s.facultyName) return false;
+    if (s.facultyId && s.facultyId === currentUser.id) return true;
+
+    const userClean = (currentUser.displayName || '')
+      .toLowerCase()
+      .replace(/\([^)]*\)/g, '')
+      .trim();
+    const facClean = s.facultyName.toLowerCase();
+
+    if (facClean.includes(userClean) || userClean.includes(facClean)) return true;
+
+    // Check specific name tokens (e.g. Roopa, Ajay, Suma, Chetana, Manjula, Veena, Anusha, Dhananjaya, Shubha, Prasad, Bindiya, etc.)
+    const userWords = userClean
+      .split(/\s+/)
+      .filter(w => w.length >= 3 && !['prof', 'prof.', 'dr.', 'mrs.', 'mr.', 'ms.', 'cse'].includes(w));
+
+    return userWords.some(w => facClean.includes(w));
+  };
+
+  // Check if student is allotted to a given laboratory
+  const isStudentAllotted = (labId: string): boolean => {
+    if (!isStudent) return true;
+    if (!currentUser.assignedLabs || currentUser.assignedLabs.length === 0) return false;
+    return currentUser.assignedLabs.includes(labId);
+  };
+
+  // Student allotted labs list
+  const studentAllottedLabs = useMemo(() => {
+    if (!isStudent || !currentUser.assignedLabs) return laboratories;
+    return laboratories.filter(l => currentUser.assignedLabs.includes(l.id));
+  }, [isStudent, currentUser, laboratories]);
+
   // Selected laboratory object
   const currentLab = useMemo(() => {
-    return laboratories.find(l => l.id === selectedLabId) || activeLab || laboratories[0];
-  }, [laboratories, selectedLabId, activeLab]);
+    if (selectedLabId === 'ALL') return null;
+    return laboratories.find(l => l.id === selectedLabId) || null;
+  }, [laboratories, selectedLabId]);
 
   // Distinct faculty list for filter dropdown
   const allFacultyNames = useMemo(() => {
@@ -116,6 +160,9 @@ export const CalendarPage: React.FC = () => {
   }, [sessions]);
 
   // Convert weekday sessions into dated events for the calendar month
+  // ENFORCING ROLE-BASED VISIBILITY:
+  // 1. For Student: ONLY sessions in allotted laboratories appear.
+  // 2. For Faculty (when facultyOnlyMode is on): ONLY sessions they are taking appear across all days.
   const calendarPracticalEvents = useMemo(() => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -138,6 +185,16 @@ export const CalendarPage: React.FC = () => {
       const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
       sessions.forEach(s => {
+        // Condition A: Student Allotment Check
+        if (isStudent && !isStudentAllotted(s.laboratoryId)) {
+          return;
+        }
+
+        // Condition B: Faculty Teaching Check
+        if (isFaculty && facultyOnlyMode && !isCurrentUserTakingClass(s)) {
+          return;
+        }
+
         const sessionDay = s.date?.toLowerCase().trim();
         const matchesWeekday = sessionDay ? dayNameToWeekday[sessionDay] === weekdayNum : false;
         const matchesExactDate = s.date === dateStr;
@@ -176,66 +233,77 @@ export const CalendarPage: React.FC = () => {
     }
 
     return results;
-  }, [currentDate, sessions, laboratories]);
+  }, [currentDate, sessions, laboratories, isStudent, isFaculty, facultyOnlyMode, currentUser]);
 
   // Aggregate all events
   const allEvents = useMemo(() => {
-    const bookingEvents = bookings.map(b => {
-      const lab = laboratories.find(l => l.id === b.laboratoryId);
-      return {
-        id: b.id,
-        title: `${b.equipmentName} Reservation`,
-        rawTitle: b.equipmentName,
-        category: 'Equipment Booking',
-        type: 'booking',
-        discipline: 'Computer Science',
-        date: b.startTime.split('T')[0] || new Date().toISOString().split('T')[0],
-        dayOfWeek: new Date(b.startTime).toLocaleDateString([], { weekday: 'long' }),
-        startTime: new Date(b.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        endTime: new Date(b.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        timeStr: `${new Date(b.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(b.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
-        user: b.userName,
-        facultyName: b.userName,
-        resource: b.equipmentName,
-        laboratoryId: b.laboratoryId,
-        labName: lab?.name || 'Academic Lab',
-        labCode: lab?.code || 'LAB',
-        labIncharge: lab?.managerName || '',
-        roomNumber: lab?.roomNumber || '',
-        status: b.status,
-        badgeColor: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300'
-      };
-    });
+    const bookingEvents = bookings
+      .filter(b => {
+        if (isStudent && !isStudentAllotted(b.laboratoryId)) return false;
+        if (isFaculty && facultyOnlyMode && b.userId !== currentUser.id) return false;
+        return true;
+      })
+      .map(b => {
+        const lab = laboratories.find(l => l.id === b.laboratoryId);
+        return {
+          id: b.id,
+          title: `${b.equipmentName} Reservation`,
+          rawTitle: b.equipmentName,
+          category: 'Equipment Booking',
+          type: 'booking',
+          discipline: 'Computer Science',
+          date: b.startTime.split('T')[0] || new Date().toISOString().split('T')[0],
+          dayOfWeek: new Date(b.startTime).toLocaleDateString([], { weekday: 'long' }),
+          startTime: new Date(b.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          endTime: new Date(b.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          timeStr: `${new Date(b.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(b.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+          user: b.userName,
+          facultyName: b.userName,
+          resource: b.equipmentName,
+          laboratoryId: b.laboratoryId,
+          labName: lab?.name || 'Academic Lab',
+          labCode: lab?.code || 'LAB',
+          labIncharge: lab?.managerName || '',
+          roomNumber: lab?.roomNumber || '',
+          status: b.status,
+          badgeColor: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300'
+        };
+      });
 
-    const maintenanceEvents = maintenances.map(m => {
-      const lab = laboratories.find(l => l.id === m.laboratoryId);
-      return {
-        id: m.id,
-        title: `${m.equipmentName} Calibration`,
-        rawTitle: m.equipmentName,
-        category: 'Maintenance & Calibration',
-        type: 'maintenance',
-        discipline: 'Computer Science',
-        date: m.scheduledDate.split('T')[0],
-        dayOfWeek: new Date(m.scheduledDate).toLocaleDateString([], { weekday: 'long' }),
-        startTime: '09:00 AM',
-        endTime: '11:30 AM',
-        timeStr: '09:00 AM - 11:30 AM',
-        user: m.technicianName,
-        facultyName: m.technicianName,
-        resource: m.equipmentName,
-        laboratoryId: m.laboratoryId,
-        labName: lab?.name || 'Maintenance Facility',
-        labCode: lab?.code || 'LAB',
-        labIncharge: lab?.managerName || '',
-        roomNumber: lab?.roomNumber || '',
-        status: m.status,
-        badgeColor: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300'
-      };
-    });
+    const maintenanceEvents = maintenances
+      .filter(m => {
+        if (isStudent) return false; // Students do not see internal maintenance tickets in their student calendar
+        return true;
+      })
+      .map(m => {
+        const lab = laboratories.find(l => l.id === m.laboratoryId);
+        return {
+          id: m.id,
+          title: `${m.equipmentName} Calibration`,
+          rawTitle: m.equipmentName,
+          category: 'Maintenance & Calibration',
+          type: 'maintenance',
+          discipline: 'Computer Science',
+          date: m.scheduledDate.split('T')[0],
+          dayOfWeek: new Date(m.scheduledDate).toLocaleDateString([], { weekday: 'long' }),
+          startTime: '09:00 AM',
+          endTime: '11:30 AM',
+          timeStr: '09:00 AM - 11:30 AM',
+          user: m.technicianName,
+          facultyName: m.technicianName,
+          resource: m.equipmentName,
+          laboratoryId: m.laboratoryId,
+          labName: lab?.name || 'Maintenance Facility',
+          labCode: lab?.code || 'LAB',
+          labIncharge: lab?.managerName || '',
+          roomNumber: lab?.roomNumber || '',
+          status: m.status,
+          badgeColor: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300'
+        };
+      });
 
     return [...calendarPracticalEvents, ...bookingEvents, ...maintenanceEvents];
-  }, [bookings, maintenances, calendarPracticalEvents, laboratories]);
+  }, [bookings, maintenances, calendarPracticalEvents, laboratories, isStudent, isFaculty, facultyOnlyMode, currentUser]);
 
   // Filtering
   const filteredEvents = useMemo(() => {
@@ -262,10 +330,24 @@ export const CalendarPage: React.FC = () => {
     });
   }, [allEvents, searchQuery, selectedLabId, selectedDay, selectedFaculty, selectedStatus]);
 
-  // Sessions filtered for the Timetable Noticeboard grid
+  // Sessions filtered for the Timetable Noticeboard grid & Directory
+  // Enforces student allotment and faculty teaching filter
   const timetableSessions = useMemo(() => {
     return sessions.filter(s => {
+      // 1. Student allotment filter
+      if (isStudent && !isStudentAllotted(s.laboratoryId)) {
+        return false;
+      }
+
+      // 2. Faculty teaching filter (shows only the classes they are taking when facultyOnlyMode is on)
+      if (isFaculty && facultyOnlyMode && !isCurrentUserTakingClass(s)) {
+        return false;
+      }
+
+      // 3. Laboratory filter
       const matchesLab = selectedLabId === 'ALL' || s.laboratoryId === selectedLabId;
+
+      // 4. Search query
       const matchesSearch =
         !searchQuery ||
         s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -273,12 +355,17 @@ export const CalendarPage: React.FC = () => {
         (s.groupName && s.groupName.toLowerCase().includes(searchQuery.toLowerCase())) ||
         s.courseCode.toLowerCase().includes(searchQuery.toLowerCase());
 
+      // 5. Day filter
+      const matchesDay =
+        selectedDay === 'ALL' || s.date.toLowerCase() === selectedDay.toLowerCase();
+
+      // 6. Faculty dropdown filter
       const matchesFaculty =
         selectedFaculty === 'ALL' || s.facultyName.toLowerCase().includes(selectedFaculty.toLowerCase());
 
-      return matchesLab && matchesSearch && matchesFaculty;
+      return matchesLab && matchesSearch && matchesDay && matchesFaculty;
     });
-  }, [sessions, selectedLabId, searchQuery, selectedFaculty]);
+  }, [sessions, selectedLabId, searchQuery, selectedDay, selectedFaculty, isStudent, isFaculty, facultyOnlyMode, currentUser]);
 
   // Noticeboard Morning & Afternoon Faculty Table Map
   const noticeboardFacultyRoster = useMemo(() => {
@@ -352,7 +439,7 @@ export const CalendarPage: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `sjbit-timetable-schedule-${new Date().toISOString().split('T')[0]}.ics`;
+    link.download = `sjbit-timetable-${currentUser.role}-${new Date().toISOString().split('T')[0]}.ics`;
     link.click();
   };
 
@@ -371,22 +458,46 @@ export const CalendarPage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      {/* 1. TOP HERO HEADER & TIMETABLE BRAND */}
+      {/* 1. TOP HERO HEADER & ROLE CONTEXT BANNER */}
       <div className="p-6 sm:p-8 bg-white border border-[#E9DDF1] rounded-3xl text-[#332B40] shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="px-3 py-1 rounded-full bg-[#F0E9FF] text-[#8961D8] border border-[#BCA0F5]/50 font-mono text-xs uppercase font-extrabold tracking-wider">
               Odd Semester 2026-27 • w.e.f: 07/09/2026
             </span>
-            <span className="text-[#71667D] text-xs font-semibold">
-              SJB Institute of Technology • Dept of Computer Science & Engineering
-            </span>
+
+            {/* Role Badge with customized context */}
+            {isStudent && (
+              <span className="px-3 py-1 rounded-full bg-[#E8F8F0] text-[#1E7E52] border border-[#A7E7C4] text-xs font-bold flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Student View: Allotted Labs Only ({studentAllottedLabs.length} Labs Allotted)
+              </span>
+            )}
+
+            {isFaculty && (
+              <span className="px-3 py-1 rounded-full bg-[#FBE5EF] text-[#8961D8] border border-[#E9DDF1] text-xs font-bold flex items-center gap-1">
+                <GraduationCap className="w-3.5 h-3.5" />
+                Faculty View: Showing Classes You Take Across All Days
+              </span>
+            )}
+
+            {isAdmin && (
+              <span className="px-3 py-1 rounded-full bg-[#FFF8F2] text-[#332B40] border border-[#FFD2BF] text-xs font-bold flex items-center gap-1">
+                <BadgeCheck className="w-3.5 h-3.5 text-[#8961D8]" />
+                Admin Master View: All 11 CSE Laboratories
+              </span>
+            )}
           </div>
+
           <h1 className="font-heading font-black text-2xl sm:text-4xl text-[#332B40] mt-2 tracking-tight">
-            Laboratory Timetable & Faculty Schedule
+            Laboratory Timetable & Schedule
           </h1>
           <p className="text-sm sm:text-base text-[#71667D] mt-1 max-w-2xl leading-relaxed">
-            Real-time schedule planner showing exactly <strong>who is taking which practical class at what time</strong> across all 11 CSE laboratories.
+            {isStudent
+              ? `Personalized timetable displaying classes for your officially allotted laboratories (${studentAllottedLabs.map(l => l.code).join(', ')}).`
+              : isFaculty
+              ? `Personalized faculty schedule displaying all days (Monday to Saturday) with the exact practical sessions assigned to you.`
+              : `Comprehensive institutional schedule showing practical classes, faculty assignments, and workstations across all laboratories.`}
           </p>
         </div>
 
@@ -401,8 +512,8 @@ export const CalendarPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. PRIMARY VIEW MODE TOGGLES (NOTICEBOARD TIMETABLE / FACULTY DIRECTORY / CALENDAR) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-white border border-[#E9DDF1] rounded-3xl shadow-sm">
+      {/* 2. PRIMARY VIEW MODE TOGGLES & FACULTY FILTER SWITCH */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-white border border-[#E9DDF1] rounded-3xl shadow-sm">
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setViewMode('timetable')}
@@ -453,30 +564,119 @@ export const CalendarPage: React.FC = () => {
           </button>
         </div>
 
-        {/* Total Practical Sessions Counter */}
-        <div className="flex items-center space-x-2 text-xs font-bold text-[#71667D] px-3 py-1.5 rounded-full bg-[#FFF8F2] border border-[#E9DDF1] shrink-0">
-          <Sparkles className="w-3.5 h-3.5 text-[#8961D8]" />
-          <span>{sessions.length} Scheduled Batches Loaded</span>
+        {/* Right side options: Faculty Teaching Toggle or Session Counter */}
+        <div className="flex items-center gap-3">
+          {isFaculty && (
+            <div className="flex items-center bg-[#FFF8F2] p-1 rounded-2xl border border-[#E9DDF1]">
+              <button
+                onClick={() => setFacultyOnlyMode(true)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                  facultyOnlyMode
+                    ? 'bg-white text-[#8961D8] shadow-xs font-black'
+                    : 'text-[#71667D] hover:text-[#332B40]'
+                }`}
+              >
+                <GraduationCap className="w-3.5 h-3.5" />
+                <span>My Classes Only</span>
+              </button>
+              <button
+                onClick={() => setFacultyOnlyMode(false)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                  !facultyOnlyMode
+                    ? 'bg-white text-[#8961D8] shadow-xs font-black'
+                    : 'text-[#71667D] hover:text-[#332B40]'
+                }`}
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span>All Department Classes</span>
+              </button>
+            </div>
+          )}
+
+          <div className="flex items-center space-x-2 text-xs font-bold text-[#71667D] px-3 py-1.5 rounded-full bg-[#FFF8F2] border border-[#E9DDF1] shrink-0">
+            <Sparkles className="w-3.5 h-3.5 text-[#8961D8]" />
+            <span>{timetableSessions.length} Classes Shown</span>
+          </div>
         </div>
       </div>
 
-      {/* 3. INTERACTIVE CONTROLS & FILTER TOOLBAR */}
+      {/* 3. SEPARATE LAB SELECTOR STRIP (EACH LAB SEPARATELY SELECTABLE) */}
+      <div className="bg-white border border-[#E9DDF1] rounded-3xl p-4 shadow-sm space-y-3">
+        <div className="flex items-center justify-between text-xs">
+          <span className="font-heading font-black text-[#332B40] uppercase tracking-wider flex items-center gap-1.5">
+            <Building2 className="w-4 h-4 text-[#8961D8]" />
+            Select Individual Laboratory or All Labs:
+          </span>
+          {isStudent && (
+            <span className="text-[11px] font-semibold text-[#71667D]">
+              Showing only your allotted laboratories ({studentAllottedLabs.length} assigned)
+            </span>
+          )}
+        </div>
+
+        {/* Horizontal Scrollable Lab Buttons (Each Lab Separate) */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+          {/* Option: All Labs */}
+          <button
+            onClick={() => setSelectedLabId('ALL')}
+            className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition shrink-0 flex items-center space-x-1.5 ${
+              selectedLabId === 'ALL'
+                ? 'bg-[#332B40] text-white shadow-md'
+                : 'bg-[#FFF8F2] hover:bg-[#F0E9FF] text-[#71667D] border border-[#E9DDF1]'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>{isStudent ? 'All My Allotted Labs' : 'All 11 Laboratories'}</span>
+          </button>
+
+          {/* Each Lab Separately */}
+          {laboratories
+            .filter(l => l.id !== 'lab-chem-01')
+            .map(lab => {
+              const allotted = isStudentAllotted(lab.id);
+              const isSelected = selectedLabId === lab.id;
+
+              return (
+                <button
+                  key={lab.id}
+                  onClick={() => setSelectedLabId(lab.id)}
+                  className={`px-3.5 py-2 rounded-2xl text-xs font-bold transition shrink-0 flex items-center space-x-1.5 border ${
+                    isSelected
+                      ? 'bg-gradient-to-r from-[#BCA0F5] to-[#8961D8] text-white border-transparent shadow-md'
+                      : isStudent && allotted
+                      ? 'bg-[#E8F8F0] hover:bg-[#D4F4E4] text-[#1E7E52] border-[#A7E7C4]'
+                      : isStudent && !allotted
+                      ? 'bg-[#F9F9FB] text-[#71667D]/60 border-[#E9DDF1] hover:bg-slate-100'
+                      : 'bg-[#FFF8F2] hover:bg-[#F0E9FF] text-[#332B40] border-[#E9DDF1]'
+                  }`}
+                >
+                  <span className="font-mono font-black">{lab.code}</span>
+                  <span className="truncate max-w-[140px]">{lab.name.replace('Laboratory', 'Lab')}</span>
+                  {isStudent && allotted && !isSelected && (
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" title="Allotted to you" />
+                  )}
+                </button>
+              );
+            })}
+        </div>
+      </div>
+
+      {/* 4. SECONDARY SEARCH & DAY/FACULTY FILTERS */}
       <div className="p-4 sm:p-5 bg-white border border-[#E9DDF1] rounded-3xl shadow-sm space-y-4">
-        {/* Top Controls: Search + Laboratory Selector */}
         <div className="flex flex-col md:flex-row md:items-center gap-3">
-          {/* Search by teacher or class */}
+          {/* Search bar */}
           <div className="relative flex-1 min-w-[240px]">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#71667D]" />
             <input
               type="text"
-              placeholder="Search faculty name (e.g. Roopa, Ajay, Suma, Chetana, Manjula), course or batch..."
+              placeholder="Search by instructor (e.g. Roopa, Ajay, Suma, Chetana), batch (C2, B1) or course..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-[#FFF8F2] border border-[#E9DDF1] rounded-2xl text-xs font-semibold text-[#332B40] placeholder-[#71667D] focus:outline-none focus:ring-2 focus:ring-[#BCA0F5]"
             />
           </div>
 
-          {/* Laboratory Selector (All 11 Labs) */}
+          {/* Laboratory Selector Dropdown */}
           <div className="flex items-center gap-2 min-w-[260px]">
             <Building2 className="w-4 h-4 text-[#8961D8] shrink-0" />
             <select
@@ -484,40 +684,47 @@ export const CalendarPage: React.FC = () => {
               onChange={e => setSelectedLabId(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-[#FFF8F2] border border-[#E9DDF1] rounded-2xl text-xs font-bold text-[#332B40] focus:outline-none focus:ring-2 focus:ring-[#BCA0F5]"
             >
-              <option value="ALL">All 11 SJBIT CSE Laboratories</option>
+              <option value="ALL">
+                {isStudent ? '✨ All My Allotted Laboratories' : '✨ All 11 CSE Laboratories'}
+              </option>
               {laboratories
                 .filter(l => l.id !== 'lab-chem-01')
-                .map(lab => (
-                  <option key={lab.id} value={lab.id}>
-                    {lab.name} ({lab.code}) — Incharge: {lab.managerName}
+                .map(lab => {
+                  const allotted = isStudentAllotted(lab.id);
+                  return (
+                    <option key={lab.id} value={lab.id}>
+                      {lab.name} ({lab.code}) — {isStudent ? (allotted ? '✅ Allotted' : '❌ Not Allotted') : `Incharge: ${lab.managerName}`}
+                    </option>
+                  );
+                })}
+            </select>
+          </div>
+
+          {/* Faculty Dropdown Filter (Hidden if faculty is viewing only their own classes) */}
+          {(!isFaculty || !facultyOnlyMode) && (
+            <div className="flex items-center gap-2 min-w-[220px]">
+              <GraduationCap className="w-4 h-4 text-[#8961D8] shrink-0" />
+              <select
+                value={selectedFaculty}
+                onChange={e => setSelectedFaculty(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-[#FFF8F2] border border-[#E9DDF1] rounded-2xl text-xs font-bold text-[#332B40] focus:outline-none focus:ring-2 focus:ring-[#BCA0F5]"
+              >
+                <option value="ALL">All Faculty Instructors</option>
+                {allFacultyNames.map(fac => (
+                  <option key={fac} value={fac}>
+                    {fac}
                   </option>
                 ))}
-            </select>
-          </div>
-
-          {/* Faculty Filter */}
-          <div className="flex items-center gap-2 min-w-[220px]">
-            <GraduationCap className="w-4 h-4 text-[#8961D8] shrink-0" />
-            <select
-              value={selectedFaculty}
-              onChange={e => setSelectedFaculty(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-[#FFF8F2] border border-[#E9DDF1] rounded-2xl text-xs font-bold text-[#332B40] focus:outline-none focus:ring-2 focus:ring-[#BCA0F5]"
-            >
-              <option value="ALL">All Faculty Instructors</option>
-              {allFacultyNames.map(fac => (
-                <option key={fac} value={fac}>
-                  {fac}
-                </option>
-              ))}
-            </select>
-          </div>
+              </select>
+            </div>
+          )}
         </div>
 
-        {/* Day of Week Selector Pills */}
+        {/* Day Pills Bar */}
         <div className="pt-3 border-t border-[#E9DDF1] flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
           <div className="flex items-center space-x-1.5 shrink-0">
             <span className="text-xs font-bold uppercase tracking-wider text-[#71667D] mr-2">
-              Day Filter:
+              Filter Day:
             </span>
             <button
               onClick={() => setSelectedDay('ALL')}
@@ -527,7 +734,7 @@ export const CalendarPage: React.FC = () => {
                   : 'bg-[#FFF8F2] hover:bg-[#F0E9FF] text-[#71667D]'
               }`}
             >
-              Whole Week (Mon–Sat)
+              All Days (Mon–Sat)
             </button>
             {DAYS_OF_WEEK.map(day => (
               <button
@@ -550,11 +757,33 @@ export const CalendarPage: React.FC = () => {
               className="px-3 py-1.5 rounded-xl text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 transition flex items-center gap-1 shrink-0"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span>Reset</span>
+              <span>Reset Filters</span>
             </button>
           )}
         </div>
       </div>
+
+      {/* STUDENT NON-ALLOTTED LAB WARNING (IF STUDENT PICKS A LAB NOT ALLOTTED TO THEM) */}
+      {isStudent && selectedLabId !== 'ALL' && !isStudentAllotted(selectedLabId) && (
+        <div className="p-5 rounded-3xl bg-amber-50 border border-amber-200 text-amber-900 flex items-start space-x-3">
+          <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <h4 className="font-heading font-black text-sm">
+              Laboratory Not Allotted to Your Student Account
+            </h4>
+            <p className="text-xs leading-relaxed">
+              You are currently viewing <strong>{currentLab?.name}</strong>, but your student profile ({currentUser.displayName}) is not allotted to this facility.
+              Your allotted laboratories are: <strong>{studentAllottedLabs.map(l => l.name).join(', ')}</strong>.
+            </p>
+            <button
+              onClick={() => setSelectedLabId('ALL')}
+              className="mt-2 px-3.5 py-1.5 rounded-xl bg-amber-600 text-white font-bold text-xs hover:bg-amber-700 transition"
+            >
+              Show My Allotted Labs
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ======================================================== */}
       {/* VIEW 1: NOTICEBOARD TIMETABLE GRID (DIGITAL POSTER REPLICA) */}
@@ -573,18 +802,36 @@ export const CalendarPage: React.FC = () => {
             </div>
 
             <h2 className="font-heading font-black text-2xl sm:text-3xl text-[#332B40]">
-              {selectedLabId === 'ALL' ? 'Comprehensive All-Labs Overview' : currentLab?.name}
+              {selectedLabId === 'ALL'
+                ? isStudent
+                  ? 'Allotted Laboratories Schedule'
+                  : isFaculty && facultyOnlyMode
+                  ? `${currentUser.displayName} — Weekly Duty Schedule`
+                  : 'Comprehensive All-Labs Overview'
+                : currentLab?.name}
             </h2>
 
             <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-bold text-[#71667D] pt-1">
-              <span className="flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-[#8961D8]" />
-                {currentLab?.roomNumber || 'CSE Academic Block'}
-              </span>
-              <span className="flex items-center gap-1 bg-[#FBE5EF] px-3 py-1 rounded-full text-[#332B40] border border-[#E9DDF1]">
-                <BadgeCheck className="w-4 h-4 text-[#8961D8]" />
-                <strong>LAB INCHARGE:</strong> {currentLab?.managerName || 'Assigned Faculty'}
-              </span>
+              {currentLab ? (
+                <>
+                  <span className="flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 text-[#8961D8]" />
+                    {currentLab.roomNumber}
+                  </span>
+                  <span className="flex items-center gap-1 bg-[#FBE5EF] px-3 py-1 rounded-full text-[#332B40] border border-[#E9DDF1]">
+                    <BadgeCheck className="w-4 h-4 text-[#8961D8]" />
+                    <strong>LAB INCHARGE:</strong> {currentLab.managerName}
+                  </span>
+                </>
+              ) : (
+                <span className="flex items-center gap-1">
+                  <Layers className="w-3.5 h-3.5 text-[#8961D8]" />
+                  {isStudent
+                    ? `${studentAllottedLabs.length} Allotted Laboratories`
+                    : 'All 11 Active Department Laboratories'}
+                </span>
+              )}
+
               <span className="flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5 text-[#8961D8]" />
                 Timing: 08:30 AM – 04:30 PM (Mon–Sat)
@@ -676,7 +923,7 @@ export const CalendarPage: React.FC = () => {
                         )}
 
                         {/* Tea Break Column */}
-                        <td className="bg-[#FBE5EF]/40 border-r border-[#E9DDF1] text-[10px] font-black text-[#8961D8] writing-mode-vertical">
+                        <td className="bg-[#FBE5EF]/40 border-r border-[#E9DDF1] text-[10px] font-black text-[#8961D8]">
                           TEA
                         </td>
 
@@ -711,7 +958,7 @@ export const CalendarPage: React.FC = () => {
                           LUNCH
                         </td>
 
-                        {/* Afternoon 1:30 - 2:30 (Single or Spanned) */}
+                        {/* Afternoon 1:30 - 2:30 (Single Slot) */}
                         {afternoonSlot1 ? (
                           <td className="p-2 border-r border-[#E9DDF1]">
                             <div
@@ -763,7 +1010,7 @@ export const CalendarPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Authentic Faculty Incharge Summary Table (Morning & Afternoon Roster) */}
+          {/* Authentic Faculty Duty Roster Table (Morning vs. Afternoon) */}
           <div className="p-6 bg-white border border-[#E9DDF1] rounded-3xl shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <div>
@@ -839,13 +1086,17 @@ export const CalendarPage: React.FC = () => {
           <div className="p-6 bg-gradient-to-r from-[#F0E9FF] to-[#FFF8F2] border border-[#BCA0F5]/40 rounded-3xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <span className="px-3 py-1 rounded-full bg-white text-[#8961D8] text-[11px] font-black uppercase tracking-wider border border-[#BCA0F5]">
-                Instructor & Practical Directory
+                Instructor & Class Directory
               </span>
               <h2 className="font-heading font-black text-2xl text-[#332B40] mt-1.5">
                 Who Is Taking Which Class At What Time
               </h2>
               <p className="text-xs text-[#71667D] mt-0.5">
-                Detailed schedule cards listing each faculty instructor, course, practical batch, exact timing, and laboratory room.
+                {isFaculty && facultyOnlyMode
+                  ? `Showing all practical classes scheduled for you (${currentUser.displayName}) across all days.`
+                  : isStudent
+                  ? `Showing practical classes scheduled across your officially allotted laboratories.`
+                  : `Detailed schedule cards listing each faculty instructor, course, practical batch, exact timing, and laboratory room.`}
               </p>
             </div>
 
@@ -861,7 +1112,13 @@ export const CalendarPage: React.FC = () => {
               <div className="col-span-full p-12 text-center bg-white border border-[#E9DDF1] rounded-3xl text-[#71667D]">
                 <Users className="w-10 h-10 mx-auto text-[#BCA0F5] mb-2" />
                 <p className="font-black text-base text-[#332B40]">No Matching Classes Found</p>
-                <p className="text-xs mt-1">Try resetting your search query or selecting a different laboratory.</p>
+                <p className="text-xs mt-1">
+                  {isStudent
+                    ? 'No classes found for your allotted laboratories matching current filters.'
+                    : isFaculty && facultyOnlyMode
+                    ? 'No classes scheduled for you under the selected filters. Switch to "All Department Classes" to view other faculty.'
+                    : 'Try resetting your search query or selecting a different laboratory.'}
+                </p>
               </div>
             ) : (
               timetableSessions.map(sess => {
@@ -980,7 +1237,11 @@ export const CalendarPage: React.FC = () => {
             </div>
 
             <div className="text-xs font-bold text-[#71667D]">
-              Showing {filteredEvents.length} recurring practical classes in {monthNames[month]}
+              {isStudent
+                ? `Showing practical classes for your allotted labs in ${monthNames[month]}`
+                : isFaculty && facultyOnlyMode
+                ? `Showing classes you take across all days in ${monthNames[month]}`
+                : `Showing ${filteredEvents.length} events in ${monthNames[month]}`}
             </div>
           </div>
 
@@ -1064,7 +1325,13 @@ export const CalendarPage: React.FC = () => {
       {viewMode === 'agenda' && (
         <div className="bg-white border border-[#E9DDF1] rounded-3xl shadow-sm overflow-hidden divide-y divide-[#E9DDF1]">
           <div className="p-4 bg-[#FFF8F2] font-heading font-black text-sm text-[#332B40] flex items-center justify-between">
-            <span>Chronological Institutional Practical Stream ({filteredEvents.length} Sessions)</span>
+            <span>
+              {isStudent
+                ? `Allotted Practical Stream (${filteredEvents.length} Sessions)`
+                : isFaculty && facultyOnlyMode
+                ? `Your Teaching Classes Stream (${filteredEvents.length} Sessions)`
+                : `Chronological Practical Stream (${filteredEvents.length} Sessions)`}
+            </span>
             <span className="text-xs text-[#71667D] font-normal">Sorted by day & time</span>
           </div>
 
@@ -1072,7 +1339,13 @@ export const CalendarPage: React.FC = () => {
             <div className="p-12 text-center text-[#71667D]">
               <CalendarIcon className="w-10 h-10 mx-auto text-[#BCA0F5] mb-2" />
               <p className="font-black text-base text-[#332B40]">No Scheduled Sessions Found</p>
-              <p className="text-xs mt-1">Try resetting filters or selecting another laboratory.</p>
+              <p className="text-xs mt-1">
+                {isStudent
+                  ? 'No classes found for your allotted laboratories.'
+                  : isFaculty && facultyOnlyMode
+                  ? 'No classes scheduled for you under the selected filters.'
+                  : 'Try resetting filters or selecting another laboratory.'}
+              </p>
             </div>
           ) : (
             filteredEvents.map(evt => (
@@ -1128,7 +1401,7 @@ export const CalendarPage: React.FC = () => {
       )}
 
       {/* ======================================================== */}
-      {/* 4. MODAL: DETAILED PRACTICAL CLASS / EVENT INSPECTOR */}
+      {/* 5. MODAL: DETAILED PRACTICAL CLASS / EVENT INSPECTOR */}
       {/* ======================================================== */}
       {selectedEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">

@@ -121,11 +121,11 @@ export const INITIAL_USERS: UserProfile[] = [
   {
     id: 'usr-incharge-hemanth',
     email: 'hemanthkumar@sjbit.edu.in',
-    displayName: 'Hemanth Kumar (Lab Incharge - CBL 01)',
+    displayName: 'Hemanth Kumar (Lab Incharge - CBL 01 & 02)',
     role: 'labManager',
     organizationId: 'org-sjbit-01',
     departmentId: 'dept-cse',
-    assignedLabs: ['lab-cbl-01'],
+    assignedLabs: ['lab-cbl-01', 'lab-cbl-02'],
     assignedLabId: 'lab-cbl-01',
     phoneNumber: '+91 (080) 2861-2452',
     createdAt: '2026-01-15T09:00:00Z',
@@ -514,6 +514,18 @@ export const INITIAL_USERS: UserProfile[] = [
     assignedLabs: ['lab-atl-01', 'lab-atl-02', 'lab-atl-03', 'lab-sll-01', 'lab-sll-02', 'lab-bfl-01', 'lab-bfl-02', 'lab-bfl-03', 'lab-vin-01', 'lab-cbl-01', 'lab-cbl-02'],
     assignedLabId: 'lab-atl-01',
     phoneNumber: '+91 98450 12345',
+    createdAt: '2026-03-01T14:00:00Z',
+  },
+  {
+    id: 'usr-stud-02',
+    email: '1jb23cs004@sjbit.edu.in',
+    displayName: 'Darshan Gowda (1JB23CS004)',
+    role: 'student',
+    organizationId: 'org-sjbit-01',
+    departmentId: 'dept-cse',
+    assignedLabs: ['lab-cbl-02', 'lab-bfl-01'],
+    assignedLabId: 'lab-cbl-02',
+    phoneNumber: '+91 98450 67890',
     createdAt: '2026-03-01T14:00:00Z',
   }
 ];
