@@ -34,6 +34,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { DataService } from '../services/dataService';
 import { EquipmentBooking, PracticalSession, MaintenanceRecord, Laboratory, UserProfile } from '../types';
+import { FacultyLabBookingModal } from '../components/FacultyLabBookingModal';
 
 export const CalendarPage: React.FC = () => {
   const { activeLab, currentUser } = useAuth();
@@ -48,6 +49,7 @@ export const CalendarPage: React.FC = () => {
   const [sessions, setSessions] = useState<PracticalSession[]>([]);
   const [maintenances, setMaintenances] = useState<MaintenanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isFacultyBookingOpen, setIsFacultyBookingOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [selectedDayDetail, setSelectedDayDetail] = useState<{
     dateStr: string;
@@ -76,30 +78,29 @@ export const CalendarPage: React.FC = () => {
   const DAYS_SHORT = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
   // Load labs & events
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        const [labs, bk, ss, mn] = await Promise.all([
-          DataService.getLaboratories(),
-          DataService.getBookings(),
-          DataService.getPracticalSessions(),
-          DataService.getMaintenanceRecords()
-        ]);
-        setLaboratories(labs);
-        setBookings(bk);
-        setSessions(ss);
-        setMaintenances(mn);
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [labs, bk, ss, mn] = await Promise.all([
+        DataService.getLaboratories(),
+        DataService.getBookings(),
+        DataService.getPracticalSessions(),
+        DataService.getMaintenanceRecords()
+      ]);
+      setLaboratories(labs);
+      setBookings(bk);
+      setSessions(ss);
+      setMaintenances(mn);
+    } catch (err) {
+      console.error('Failed to load schedule events:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        // Default timetable to ALL so all allotted classes appear immediately
-        setSelectedLabId('ALL');
-      } catch (err) {
-        console.error('Failed to load schedule events:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  useEffect(() => {
     loadData();
+    setSelectedLabId('ALL');
   }, [activeLab]);
 
   // Keep faculty mode synced when role is faculty
@@ -614,6 +615,16 @@ export const CalendarPage: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          {(isFaculty || isAdmin || isTechnician) && (
+            <button
+              onClick={() => setIsFacultyBookingOpen(true)}
+              className="px-4 py-2.5 rounded-full bg-gradient-to-r from-[#BCA0F5] to-[#8961D8] hover:from-[#a782f0] hover:to-[#774ec7] text-white font-extrabold text-sm flex items-center gap-2 transition active:scale-95 shadow-md"
+            >
+              <CalendarIcon className="w-4 h-4 text-white" />
+              <span>Book Laboratory Facility</span>
+            </button>
+          )}
+
           <button
             onClick={exportICS}
             className="px-4 py-2.5 rounded-full bg-[#FFF8F2] hover:bg-[#F0E9FF] text-[#332B40] border border-[#E9DDF1] font-bold text-sm flex items-center gap-2 transition active:scale-95 shadow-xs"
@@ -1826,6 +1837,15 @@ export const CalendarPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* 7. MODAL: FACULTY LAB BOOKING MODAL */}
+      <FacultyLabBookingModal
+        isOpen={isFacultyBookingOpen}
+        onClose={() => setIsFacultyBookingOpen(false)}
+        onSuccess={() => {
+          loadData();
+        }}
+      />
     </div>
   );
 };

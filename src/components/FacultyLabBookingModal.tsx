@@ -62,12 +62,28 @@ export const FacultyLabBookingModal: React.FC<FacultyLabBookingModalProps> = ({
   const currentLab = laboratories.find(l => l.id === selectedLabId);
   const maxCapacity = currentLab?.capacity || 30;
 
+  const formatTimeSlot = (timeStr: string) => {
+    if (!timeStr) return '09:00 AM';
+    if (timeStr.toLowerCase().includes('am') || timeStr.toLowerCase().includes('pm')) return timeStr;
+    const [hh, mm] = timeStr.split(':');
+    const h = parseInt(hh, 10);
+    const m = mm || '00';
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const displayH = h % 12 === 0 ? 12 : h % 12;
+    return `${String(displayH).padStart(2, '0')}:${m} ${ampm}`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
 
     if (!currentLab) {
       setErrorMsg('Please select a valid laboratory facility.');
+      return;
+    }
+
+    if (!date) {
+      setErrorMsg('Please choose a valid booking date.');
       return;
     }
 
@@ -84,7 +100,7 @@ export const FacultyLabBookingModal: React.FC<FacultyLabBookingModalProps> = ({
       return;
     }
 
-    // Operating hours check (08:00 to 18:00 standard university lab hours)
+    // Operating hours check (08:00 to 19:00 standard university lab hours)
     const startHour = parseInt(startTime.split(':')[0], 10);
     const endHour = parseInt(endTime.split(':')[0], 10);
     if (startHour < 8 || endHour > 19) {
@@ -94,7 +110,28 @@ export const FacultyLabBookingModal: React.FC<FacultyLabBookingModalProps> = ({
 
     setIsSubmitting(true);
     try {
-      // 1. Create concurrency-safe booking record in DataService
+      const formattedStart = formatTimeSlot(startTime);
+      const formattedEnd = formatTimeSlot(endTime);
+
+      // 1. Register in practical sessions roster (Timetable Noticeboard & Calendar)
+      await DataService.createPracticalSession({
+        title: subjectCourse || `${currentLab.name} Practical Evaluation`,
+        courseCode: subjectCourse.split(' ')[0] || 'LAB-301',
+        laboratoryId: currentLab.id,
+        facultyId: currentUser.id,
+        facultyName: currentUser.displayName,
+        groupName: classSection,
+        studentCount,
+        attendanceCount: 0,
+        date,
+        startTime: formattedStart,
+        endTime: formattedEnd,
+        requiredEquipment: requiredEquipment.split(',').map(s => s.trim()).filter(Boolean),
+        status: 'SCHEDULED',
+        observations: `Booking notes: ${supportingNotes || specialRequirements || 'Faculty laboratory reservation'}`
+      }, currentUser);
+
+      // 2. Create concurrency-safe facility booking record in DataService
       await DataService.createBooking(
         {
           equipmentId: currentLab.id,
@@ -110,24 +147,6 @@ export const FacultyLabBookingModal: React.FC<FacultyLabBookingModalProps> = ({
         },
         currentUser
       );
-
-      // 2. Also register in practical sessions roster
-      await DataService.createPracticalSession({
-        title: subjectCourse || `${currentLab.name} Practical`,
-        courseCode: subjectCourse.split(' ')[0] || 'LAB-301',
-        laboratoryId: currentLab.id,
-        facultyId: currentUser.id,
-        facultyName: currentUser.displayName,
-        groupName: classSection,
-        studentCount,
-        attendanceCount: 0,
-        date,
-        startTime,
-        endTime,
-        requiredEquipment: requiredEquipment.split(',').map(s => s.trim()),
-        status: 'SCHEDULED',
-        observations: `Booking notes: ${supportingNotes || specialRequirements || 'None'}`
-      }, currentUser);
 
       onSuccess();
       onClose();

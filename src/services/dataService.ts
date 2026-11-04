@@ -205,6 +205,7 @@ class LocalStoreManager {
     return merged;
   }
   public setLabs(labs: Laboratory[]) { this.set('laboratories', labs); }
+  public getLaboratories(): Laboratory[] { return this.getLabs(); }
 
   public getInventory(): UniversalInventoryItem[] { return this.get('inventory', INITIAL_INVENTORY); }
   public setInventory(items: UniversalInventoryItem[]) { this.set('inventory', items); }
@@ -803,10 +804,15 @@ export class DataService {
   ): Promise<EquipmentBooking> {
     const equipList = localStore.getEquipment();
     const equip = equipList.find(e => e.id === bookingData.equipmentId);
-    if (!equip) throw new Error('Equipment asset not found.');
+    const labList = localStore.getLaboratories();
+    const lab = labList.find(l => l.id === bookingData.equipmentId || l.id === bookingData.laboratoryId);
+
+    if (!equip && !lab) {
+      throw new Error('Equipment asset or laboratory facility not found.');
+    }
 
     // Concurrency Rule 1: Maintenance-blocked or Out-of-service equipment CANNOT be booked
-    if (equip.status === 'MAINTENANCE_BLOCKED' || equip.status === 'OUT_OF_SERVICE') {
+    if (equip && (equip.status === 'MAINTENANCE_BLOCKED' || equip.status === 'OUT_OF_SERVICE')) {
       throw new Error(`Booking Rejected: Equipment "${equip.name}" is locked due to safety status: ${equip.status}`);
     }
 
@@ -819,15 +825,18 @@ export class DataService {
 
     // Concurrency Rule 2: Overlapping confirmed/pending bookings check
     const existingBookings = localStore.getBookings().filter(
-      b => b.equipmentId === bookingData.equipmentId && (b.status === 'CONFIRMED' || b.status === 'PENDING')
+      b => (b.equipmentId === bookingData.equipmentId || (bookingData.laboratoryId && b.laboratoryId === bookingData.laboratoryId && b.equipmentId === bookingData.equipmentId)) &&
+           (b.status === 'CONFIRMED' || b.status === 'PENDING')
     );
+
+    const resourceName = equip ? equip.name : (lab ? lab.name : bookingData.equipmentName);
 
     for (const b of existingBookings) {
       const bStart = new Date(b.startTime).getTime();
       const bEnd = new Date(b.endTime).getTime();
       if (newStart < bEnd && newEnd > bStart) {
         throw new Error(
-          `Schedule Conflict: "${equip.name}" is already reserved by ${b.userName} from ${new Date(b.startTime).toLocaleTimeString()} to ${new Date(b.endTime).toLocaleTimeString()}. Please choose an alternate slot.`
+          `Schedule Conflict: "${resourceName}" is already reserved by ${b.userName} from ${new Date(b.startTime).toLocaleTimeString()} to ${new Date(b.endTime).toLocaleTimeString()}. Please choose an alternate slot.`
         );
       }
     }

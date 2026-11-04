@@ -37,12 +37,14 @@ import {
   EquipmentAsset,
   UniversalInventoryItem
 } from '../types';
+import { FacultyLabBookingModal } from '../components/FacultyLabBookingModal';
 
 export const LaboratoriesPage: React.FC = () => {
   const { laboratories, currentUser, refreshData, switchLaboratory } = useAuth();
   const [selectedLab, setSelectedLab] = useState<Laboratory | null>(null);
   const [activeTab, setActiveTab] = useState<'timetable' | 'overview' | 'workstations' | 'students' | 'equipment' | 'inventory' | 'maintenance'>('timetable');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [workstations, setWorkstations] = useState<ComputerWorkstation[]>([]);
   const [sessions, setSessions] = useState<PracticalSession[]>([]);
   const [allSessions, setAllSessions] = useState<PracticalSession[]>([]);
@@ -330,12 +332,23 @@ export const LaboratoriesPage: React.FC = () => {
                 </p>
               </div>
 
-              <button
-                onClick={() => setSelectedLab(null)}
-                className="p-2 text-[#5B6478] hover:text-[#172033] rounded-xl hover:bg-[#F5F6FC] transition"
-              >
-                <X className="w-6 h-6" />
-              </button>
+              <div className="flex items-center space-x-2">
+                {(currentUser.role === 'faculty' || currentUser.role === 'admin' || currentUser.role === 'technician') && (
+                  <button
+                    onClick={() => setIsBookingModalOpen(true)}
+                    className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#BCA0F5] to-[#8961D8] text-white text-xs font-black shadow-sm hover:opacity-95 transition flex items-center space-x-1.5"
+                  >
+                    <Calendar className="w-3.5 h-3.5 text-white" />
+                    <span>Reserve Facility</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => setSelectedLab(null)}
+                  className="p-2 text-[#5B6478] hover:text-[#172033] rounded-xl hover:bg-[#F5F6FC] transition"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
             </div>
 
             {/* Modal Navigation Tabs */}
@@ -1035,6 +1048,25 @@ export const LaboratoriesPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* FACULTY LAB RESERVATION MODAL */}
+      <FacultyLabBookingModal
+        isOpen={isBookingModalOpen}
+        onClose={() => setIsBookingModalOpen(false)}
+        onSuccess={() => {
+          DataService.getPracticalSessions().then(list => {
+            setAllSessions(list);
+            if (selectedLab) {
+              const labSessions = list.filter(s =>
+                s.laboratoryId === selectedLab.id ||
+                (selectedLab.name.toLowerCase().includes('vinodham') && s.laboratoryId === 'lab-vin-01') ||
+                (selectedLab.code && s.laboratoryId.toLowerCase().includes(selectedLab.code.toLowerCase()))
+              );
+              setSessions(labSessions);
+            }
+          });
+        }}
+      />
     </div>
   );
 };

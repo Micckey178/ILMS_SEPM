@@ -43,6 +43,16 @@ describe('ILMS Multi-Laboratory Business Workflows & Data Integrity', () => {
     assignedLabId: 'lab-chem-01'
   };
 
+  const facultyUser: UserProfile = {
+    id: 'usr-fac-test',
+    email: 'fac.test@institution.edu',
+    displayName: 'Test Faculty Professor',
+    role: 'faculty',
+    organizationId: 'org-main-01',
+    assignedLabs: ['lab-chem-01'],
+    assignedLabId: 'lab-chem-01'
+  };
+
   beforeEach(() => {
     // Reset test database to fresh seed state
     localStore.resetToSeed();
@@ -326,5 +336,74 @@ describe('ILMS Multi-Laboratory Business Workflows & Data Integrity', () => {
     const verified = verifiedList.find(v => v.id === targetVendor.id);
     expect(verified?.verificationStatus).toBe('VERIFIED');
     expect(verified?.certificationDetails).toBe('ISO-9001:2015 Cert #9982');
+  });
+
+  // 13. Faculty Whole Facility Lab Booking & Timetable Synchronization
+  it('13. Faculty can book whole laboratory facility and schedule practical session simultaneously', async () => {
+    const labs = await DataService.getLaboratories();
+    const lab = labs.find(l => l.id === 'lab-chem-01') || labs[0];
+    expect(lab).toBeDefined();
+
+    const bookingDate = '2026-11-20';
+    const startIso = `${bookingDate}T09:00:00.000Z`;
+    const endIso = `${bookingDate}T12:00:00.000Z`;
+
+    // 1. Practical session is scheduled
+    const session = await DataService.createPracticalSession({
+      title: 'SE&PM Midterm Practical Evaluation',
+      courseCode: 'BCS501',
+      laboratoryId: lab!.id,
+      facultyId: facultyUser.id,
+      facultyName: facultyUser.displayName,
+      groupName: 'Batch 5A',
+      studentCount: 30,
+      attendanceCount: 0,
+      date: bookingDate,
+      startTime: '09:00 AM',
+      endTime: '12:00 PM',
+      requiredEquipment: ['Computer Workstations', 'StarUML Suite'],
+      status: 'SCHEDULED',
+      observations: 'Scheduled via Faculty Lab Booking System'
+    }, facultyUser);
+
+    expect(session.id).toBeDefined();
+
+    // 2. Concurrency-safe whole facility booking
+    const booking = await DataService.createBooking({
+      equipmentId: lab!.id,
+      equipmentName: `Whole Facility: ${lab!.name} (Batch 5A)`,
+      laboratoryId: lab!.id,
+      userId: facultyUser.id,
+      userName: facultyUser.displayName,
+      userRole: facultyUser.role,
+      startTime: startIso,
+      endTime: endIso,
+      purpose: 'SE&PM Midterm Practical Evaluation',
+      projectOrExperiment: '30 Students • Req: Computer Workstations'
+    }, facultyUser);
+
+    expect(booking.id).toBeDefined();
+    expect(booking.status).toBe('CONFIRMED');
+
+    // 3. Verify it is queryable in practical sessions list
+    const allSessions = await DataService.getPracticalSessions();
+    const foundSession = allSessions.find(s => s.id === session.id);
+    expect(foundSession).toBeDefined();
+    expect(foundSession?.date).toBe(bookingDate);
+
+    // 4. Verify conflicting booking in same time window is rejected
+    await expect(
+      DataService.createBooking({
+        equipmentId: lab!.id,
+        equipmentName: `Whole Facility: ${lab!.name} (Conflicting)`,
+        laboratoryId: lab!.id,
+        userId: 'usr-fac-02',
+        userName: 'Other Professor',
+        userRole: 'faculty',
+        startTime: `${bookingDate}T10:00:00.000Z`,
+        endTime: `${bookingDate}T13:00:00.000Z`,
+        purpose: 'Overlapping reservation'
+      }, facultyUser)
+    ).rejects.toThrow(/schedule conflict/i);
   });
 });
