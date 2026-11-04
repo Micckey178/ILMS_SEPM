@@ -163,7 +163,7 @@ export const CalendarPage: React.FC = () => {
   }, [isFaculty, sessions, laboratories, currentUser]);
 
   // Laboratories to display in the selector strip & filter dropdown
-  // Always includes all 11 department laboratories (CS-01 to CS-11)
+  // Always includes all 12 department laboratories (CS-01 to CS-12)
   const visibleLabs = useMemo(() => {
     return laboratories.filter(l => l.id !== 'lab-chem-01');
   }, [laboratories]);
@@ -570,14 +570,14 @@ export const CalendarPage: React.FC = () => {
             {isAdmin && (
               <span className="px-3 py-1 rounded-full bg-[#FFF8F2] text-[#332B40] border border-[#FFD2BF] text-xs font-bold flex items-center gap-1">
                 <BadgeCheck className="w-3.5 h-3.5 text-[#8961D8]" />
-                Admin Master View: All 11 CSE Laboratories & All Classes
+                Admin Master View: All 12 CSE Laboratories & All Classes
               </span>
             )}
 
             {isTechnician && (
               <span className="px-3 py-1 rounded-full bg-[#EBF3FF] text-[#1D4ED8] border border-[#BFDBFE] text-xs font-bold flex items-center gap-1">
                 <Wrench className="w-3.5 h-3.5" />
-                Technician Operations View: All 11 CSE Laboratories & All Classes
+                Technician Operations View: All 12 CSE Laboratories & All Classes
               </span>
             )}
           </div>
@@ -591,8 +591,8 @@ export const CalendarPage: React.FC = () => {
               : isFaculty
               ? `Personalized faculty schedule displaying all days (Monday to Saturday) with the exact practical sessions assigned to you.`
               : isTechnician
-              ? `Full operational view of all academic classes across all 11 CSE laboratories to prepare workstations, equipment, and lab systems.`
-              : `Comprehensive institutional master schedule displaying all practical classes, student batches, and faculty duty rosters across all 11 laboratories.`}
+              ? `Full operational view of all academic classes across all 12 CSE laboratories to prepare workstations, equipment, and lab systems.`
+              : `Comprehensive institutional master schedule displaying all practical classes, student batches, and faculty duty rosters across all 12 laboratories.`}
           </p>
         </div>
 
@@ -712,7 +712,7 @@ export const CalendarPage: React.FC = () => {
             </span>
           ) : (
             <span className="text-[11px] font-semibold text-[#71667D]">
-              All 11 CSE Department Laboratories (CS-01 to CS-11)
+              All 12 CSE Department Laboratories (CS-01 to CS-12)
             </span>
           )}
         </div>
@@ -729,7 +729,7 @@ export const CalendarPage: React.FC = () => {
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
-            <span>{isStudent ? 'All My Allotted Labs' : isFaculty ? 'All My Teaching Labs' : 'All 11 Laboratories'}</span>
+            <span>{isStudent ? 'All My Allotted Labs' : isFaculty ? 'All My Teaching Labs' : 'All 12 Laboratories'}</span>
           </button>
 
           {/* Each Lab Separately */}
@@ -786,7 +786,7 @@ export const CalendarPage: React.FC = () => {
               className="w-full px-3.5 py-2.5 bg-[#FFF8F2] border border-[#E9DDF1] rounded-2xl text-xs font-bold text-[#332B40] focus:outline-none focus:ring-2 focus:ring-[#BCA0F5]"
             >
               <option value="ALL">
-                {isStudent ? '✨ All My Allotted Laboratories' : isFaculty ? '✨ All My Teaching Laboratories' : '✨ All 11 CSE Laboratories'}
+                {isStudent ? '✨ All My Allotted Laboratories' : isFaculty ? '✨ All My Teaching Laboratories' : '✨ All 12 CSE Laboratories'}
               </option>
               {visibleLabs.map(lab => (
                 <option key={lab.id} value={lab.id}>
@@ -925,7 +925,7 @@ export const CalendarPage: React.FC = () => {
                 onClick={() => setFacultyOnlyMode(false)}
                 className="px-5 py-2.5 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shrink-0 shadow-md transition"
               >
-                View All Department Timetables (11 Labs)
+                View All Department Timetables (12 Labs)
               </button>
             </div>
           )}

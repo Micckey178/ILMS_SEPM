@@ -396,7 +396,8 @@ export class DataService {
       'lab-bfl-03': 'CS-08',
       'lab-vin-01': 'CS-09',
       'lab-cbl-01': 'CS-10',
-      'lab-cbl-02': 'CS-11'
+      'lab-cbl-02': 'CS-11',
+      'lab-ary-01': 'CS-12'
     };
 
     const standardized = Array.from(labMap.values()).map(l => standardCodes[l.id] ? { ...l, code: standardCodes[l.id] } : l);

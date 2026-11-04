@@ -176,7 +176,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             className="px-4 py-2.5 rounded-2xl bg-[#FFF8F2] hover:bg-[#F0E9FF] text-[#332B40] border border-[#E9DDF1] font-bold text-sm transition shadow-xs flex items-center gap-2"
           >
             <CalendarCheck className="w-4 h-4 text-[#8961D8]" />
-            <span>Master Timetables (11 Labs)</span>
+            <span>Master Timetables (12 Labs)</span>
           </button>
           <button
             onClick={onOpenLiveAvailability}
@@ -237,7 +237,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
           <div className="mt-3">
             <span className="font-heading font-black text-3xl sm:text-4xl text-foreground dark:text-white">
-              11 Labs
+              12 Labs
             </span>
             <p className="text-xs text-purple-600 font-bold mt-1 flex items-center gap-1">
               <span>All Classes & Faculty</span>

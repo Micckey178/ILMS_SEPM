@@ -121,7 +121,7 @@ export const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({
             className="px-5 py-3 rounded-2xl bg-[#FFF8F2] hover:bg-[#F0E9FF] text-[#332B40] border border-[#E9DDF1] font-bold text-sm shadow-sm flex items-center gap-2 transition"
           >
             <CalendarCheck className="w-5 h-5 text-[#8961D8]" />
-            <span>All Lab Timetables (11 Labs)</span>
+            <span>All Lab Timetables (12 Labs)</span>
           </button>
           <button
             onClick={onOpenQRScanner}
@@ -152,7 +152,7 @@ export const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({
           >
             <CalendarCheck className="w-6 h-6 text-indigo-600 mb-2 group-hover:scale-110 transition" />
             <h4 className="font-heading font-bold text-sm text-foreground dark:text-white">Class Timetables</h4>
-            <p className="text-xs text-muted-foreground mt-0.5">All 11 Labs & Class Schedules</p>
+            <p className="text-xs text-muted-foreground mt-0.5">All 12 Labs & Class Schedules</p>
           </button>
 
           <button
@@ -204,14 +204,14 @@ export const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({
               Class Timetables
             </span>
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
-              11 Labs
+              12 Labs
             </span>
           </div>
           <span className="font-heading font-black text-3xl text-foreground dark:text-white mt-2 block">
             {sessions.length} Classes
           </span>
           <p className="text-xs text-indigo-600 font-semibold mt-1">
-            Weekly Practical Schedule (CS-01 to CS-11) →
+            Weekly Practical Schedule (CS-01 to CS-12) →
           </p>
         </div>
 
@@ -249,7 +249,7 @@ export const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({
                 ODD SEMESTER 2026-27
               </span>
               <span className="text-xs font-bold text-muted-foreground">
-                All 11 CSE Laboratories & Classes
+                All 12 CSE Laboratories & Classes
               </span>
             </div>
             <h3 className="font-heading font-extrabold text-xl text-foreground dark:text-white mt-1">
