@@ -184,7 +184,7 @@ export const WelcomePage: React.FC = () => {
         return;
       }
 
-      setErrorMsg('Invalid email or password. You can also pick a 1-click test role below.');
+      setErrorMsg('Invalid email or password. Please verify your credentials or register a new account.');
     } catch (err: any) {
       setErrorMsg(err.message || 'Login failed.');
     } finally {
@@ -316,33 +316,6 @@ export const WelcomePage: React.FC = () => {
     }
   };
 
-  const handleQuickDemoLogin = async (roleOrId: string) => {
-    setErrorMsg(null);
-    setSuccessMsg(null);
-
-    let user = allUsers.find(u => u.id === roleOrId);
-    if (!user) {
-      if (roleOrId.includes('admin') || roleOrId === 'admin') {
-        user = allUsers.find(u => u.id === 'usr-admin-01') || allUsers.find(u => u.role === 'admin');
-      } else if (roleOrId.includes('thejaswini')) {
-        user = allUsers.find(u => u.id === 'usr-incharge-thejaswini');
-      } else if (roleOrId.includes('manjegowda')) {
-        user = allUsers.find(u => u.id === 'usr-incharge-manjegowda');
-      } else if (roleOrId.includes('veena') || roleOrId === 'faculty') {
-        user = allUsers.find(u => u.id === 'usr-fac-veena') || allUsers.find(u => u.role === 'faculty');
-      } else if (roleOrId.includes('stud') || roleOrId === 'student') {
-        user = allUsers.find(u => u.id === 'usr-stud-01') || allUsers.find(u => u.role === 'student');
-      } else if (roleOrId.includes('tech') || roleOrId === 'technician') {
-        user = allUsers.find(u => u.id === 'usr-tech-01') || allUsers.find(u => u.role === 'technician');
-      }
-    }
-
-    if (user) {
-      await switchUser(user.id);
-      setIsAuthModalOpen(false);
-      navigate('/');
-    }
-  };
 
   const labModules = [
     {
@@ -1189,62 +1162,6 @@ export const WelcomePage: React.FC = () => {
                     {loading ? 'Authenticating...' : 'Sign In to Workspace'}
                   </button>
 
-                  {/* 1-Click Demo Login Shortcuts */}
-                  <div className="pt-2 border-t border-[#E9DDF1] space-y-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#71667D] block">
-                      1-Click Instant SJBIT Roles:
-                    </span>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleQuickDemoLogin('usr-admin-01')}
-                        className="p-2.5 rounded-2xl bg-[#FFF8F2] hover:bg-[#F0E9FF] border border-[#E9DDF1] hover:border-[#BCA0F5] text-left transition shadow-sm"
-                      >
-                        <span className="font-bold text-xs text-[#332B40] block">Mehekha C</span>
-                        <span className="text-[10px] text-[#8961D8] font-bold">System Architect & Admin</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleQuickDemoLogin('usr-fac-veena')}
-                        className="p-2.5 rounded-2xl bg-[#FFF8F2] hover:bg-[#F0E9FF] border border-[#E9DDF1] hover:border-[#BCA0F5] text-left transition shadow-sm"
-                      >
-                        <span className="font-bold text-xs text-[#332B40] block">Dr. Veena H N</span>
-                        <span className="text-[10px] text-[#8961D8] font-bold">Professor, CSE</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleQuickDemoLogin('usr-incharge-thejaswini')}
-                        className="p-2.5 rounded-2xl bg-[#FFF8F2] hover:bg-[#F0E9FF] border border-[#E9DDF1] hover:border-[#BCA0F5] text-left transition shadow-sm"
-                      >
-                        <span className="font-bold text-xs text-[#332B40] block">Thejaswini B S</span>
-                        <span className="text-[10px] text-[#8961D8] font-bold">Incharge - ATL 3 & 2</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleQuickDemoLogin('usr-incharge-manjegowda')}
-                        className="p-2.5 rounded-2xl bg-[#FFF8F2] hover:bg-[#F0E9FF] border border-[#E9DDF1] hover:border-[#BCA0F5] text-left transition shadow-sm"
-                      >
-                        <span className="font-bold text-xs text-[#332B40] block">Manjegowda</span>
-                        <span className="text-[10px] text-[#8961D8] font-bold">Incharge - ATL 1 & 2</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleQuickDemoLogin('usr-stud-01')}
-                        className="p-2.5 rounded-2xl bg-[#FFF8F2] hover:bg-[#F0E9FF] border border-[#E9DDF1] hover:border-[#BCA0F5] text-left transition shadow-sm"
-                      >
-                        <span className="font-bold text-xs text-[#332B40] block">Kavya N</span>
-                        <span className="text-[10px] text-[#8961D8] font-bold">Student (1JB23CS001)</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleQuickDemoLogin('usr-tech-01')}
-                        className="p-2.5 rounded-2xl bg-[#FFF8F2] hover:bg-[#F0E9FF] border border-[#E9DDF1] hover:border-[#BCA0F5] text-left transition shadow-sm"
-                      >
-                        <span className="font-bold text-xs text-[#332B40] block">Elena Alvarez</span>
-                        <span className="text-[10px] text-[#8961D8] font-bold">Senior Technician</span>
-                      </button>
-                    </div>
-                  </div>
 
                   <div className="text-center pt-2">
                     <button

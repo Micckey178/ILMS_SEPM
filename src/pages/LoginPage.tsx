@@ -226,23 +226,6 @@ export const LoginPage: React.FC = () => {
     setResetStatus(`Password reset instructions and security token sent to ${resetEmail}. Check your inbox.`);
   };
 
-  const handleQuickDemoLogin = (userId: string) => {
-    let user = allUsers.find(u => u.id === userId);
-    if (!user) {
-      if (userId.includes('admin')) user = allUsers.find(u => u.id === 'usr-admin-01' || u.role === 'admin');
-      else if (userId.includes('thejaswini')) user = allUsers.find(u => u.id === 'usr-incharge-thejaswini');
-      else if (userId.includes('manjegowda')) user = allUsers.find(u => u.id === 'usr-incharge-manjegowda');
-      else if (userId.includes('veena')) user = allUsers.find(u => u.id === 'usr-fac-veena' || u.role === 'faculty');
-      else if (userId.includes('stud')) user = allUsers.find(u => u.id === 'usr-stud-01' || u.role === 'student');
-      else if (userId.includes('tech')) user = allUsers.find(u => u.id === 'usr-tech-01' || u.role === 'technician');
-    }
-    if (user) {
-      setEmail(user.email);
-      setPassword('password123');
-      switchUser(user.id);
-      navigate('/');
-    }
-  };
 
   return (
     <div className="min-h-screen w-full flex flex-col lg:flex-row bg-[#F7F7FC] text-[#20213A] font-sans selection:bg-purple-200 selection:text-purple-900">
@@ -341,7 +324,7 @@ export const LoginPage: React.FC = () => {
             </div>
             <p className="text-xs text-[#5B6478]">
               {authMode === 'signin'
-                ? 'Enter your institutional credentials or choose 1-click test access below.'
+                ? 'Enter your institutional credentials to access the laboratory management system.'
                 : 'Register for student, faculty, or technical staff access.'}
             </p>
           </div>
@@ -444,63 +427,6 @@ export const LoginPage: React.FC = () => {
                   </>
                 )}
               </button>
-
-              {/* 1-Click Instant SJBIT Role Selector */}
-              <div className="pt-4 border-t border-[#E4E7F0] space-y-2">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#5B6478] block">
-                  1-Click Instant SJBIT Roles:
-                </span>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleQuickDemoLogin('usr-admin-01')}
-                    className="p-2.5 rounded-2xl bg-[#F7F7FC] hover:bg-purple-50 border border-[#E4E7F0] hover:border-brand-purple text-left transition"
-                  >
-                    <span className="font-bold text-xs text-[#20213A] block">Mehekha C</span>
-                    <span className="text-[10px] text-brand-purple font-bold">System Architect & Admin</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickDemoLogin('usr-fac-veena')}
-                    className="p-2.5 rounded-2xl bg-[#F7F7FC] hover:bg-purple-50 border border-[#E4E7F0] hover:border-brand-purple text-left transition"
-                  >
-                    <span className="font-bold text-xs text-[#20213A] block">Dr. Veena H N</span>
-                    <span className="text-[10px] text-brand-purple font-bold">Professor, CSE</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickDemoLogin('usr-incharge-thejaswini')}
-                    className="p-2.5 rounded-2xl bg-[#F7F7FC] hover:bg-purple-50 border border-[#E4E7F0] hover:border-brand-purple text-left transition"
-                  >
-                    <span className="font-bold text-xs text-[#20213A] block">Thejaswini B S</span>
-                    <span className="text-[10px] text-brand-purple font-bold">Incharge - ATL 3 & 2</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickDemoLogin('usr-incharge-manjegowda')}
-                    className="p-2.5 rounded-2xl bg-[#F7F7FC] hover:bg-purple-50 border border-[#E4E7F0] hover:border-brand-purple text-left transition"
-                  >
-                    <span className="font-bold text-xs text-[#20213A] block">Manjegowda</span>
-                    <span className="text-[10px] text-brand-purple font-bold">Incharge - ATL 1 & 2</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickDemoLogin('usr-stud-01')}
-                    className="p-2.5 rounded-2xl bg-[#F7F7FC] hover:bg-purple-50 border border-[#E4E7F0] hover:border-brand-purple text-left transition"
-                  >
-                    <span className="font-bold text-xs text-[#20213A] block">Kavya N</span>
-                    <span className="text-[10px] text-brand-purple font-bold">Student (1JB23CS001)</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleQuickDemoLogin('usr-tech-01')}
-                    className="p-2.5 rounded-2xl bg-[#F7F7FC] hover:bg-purple-50 border border-[#E4E7F0] hover:border-brand-purple text-left transition"
-                  >
-                    <span className="font-bold text-xs text-[#20213A] block">Elena Alvarez</span>
-                    <span className="text-[10px] text-brand-purple font-bold">Senior Technician</span>
-                  </button>
-                </div>
-              </div>
             </form>
           ) : (
             /* CREATE ACCOUNT FORM */

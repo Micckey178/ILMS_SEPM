@@ -393,14 +393,13 @@ export const LabAssistantBot: React.FC = () => {
       };
     }
 
-    // 1-Click Demo / Login / Authentication
-    if (q.includes('sign in') || q.includes('login') || q.includes('demo') || q.includes('credential')) {
+    // Login / Authentication
+    if (q.includes('sign in') || q.includes('login') || q.includes('credential')) {
       return {
-        text: 'To sign in: Use the **1-Click Demo Access** buttons on the Welcome page for instant Administrator, Faculty, Technician, or Student roles. Alternatively, sign in directly with your university email and password.',
-        actionPath: '/welcome',
-        actionLabel: 'Go to Login & Demo Access',
+        text: 'To sign in: Enter your institutional email address and password on the Login or Welcome page. You can also register a new account under your department.',
+        actionPath: '/login',
+        actionLabel: 'Go to Sign In',
         followUps: [
-          { label: '🚀 Try 1-Click Demo Access', query: 'How do I sign in with 1-click demo access?' },
           { label: '📝 How do I register an account?', query: 'How do I register a new laboratory account?' },
           { label: '👥 What roles are available?', query: 'What user roles and permissions are supported?' }
         ]
@@ -410,11 +409,11 @@ export const LabAssistantBot: React.FC = () => {
     // Registration & Account Creation
     if (q.includes('register') || q.includes('signup') || q.includes('create account') || q.includes('verification')) {
       return {
-        text: 'To register an account: Switch to the **Register** tab on the Welcome page. Enter your Full Name, institutional email, department, and select your role to immediately activate your academic laboratory permissions.',
-        actionPath: '/welcome',
+        text: 'To register an account: Switch to the **Create Account** tab on the Login page. Enter your Full Name, institutional email, department, and select your role to immediately activate your laboratory access.',
+        actionPath: '/login',
         actionLabel: 'Open Registration Tab',
         followUps: [
-          { label: '🚀 Try 1-Click Demo instead', query: 'How do I sign in with 1-click demo access?' },
+          { label: '🔑 Sign in to existing account', query: 'How do I sign in?' },
           { label: '🏫 Learn about Multi-Lab sync', query: 'Switch between Physics, Chemistry, CS, Biology, and Engineering workspaces' }
         ]
       };
