@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Cpu,
   Plus,
@@ -21,10 +22,16 @@ import { QRLabelModal } from '../components/QRLabelModal';
 
 export const EquipmentPage: React.FC = () => {
   const { activeLab, currentUser, can } = useAuth();
+  const [searchParams] = useSearchParams();
   const [equipment, setEquipment] = useState<EquipmentAsset[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const q = searchParams.get('search');
+    if (q) setSearchQuery(q);
+  }, [searchParams]);
 
   // Modals
   const [selectedForBooking, setSelectedForBooking] = useState<EquipmentAsset | null>(null);

@@ -73,9 +73,11 @@ const AppLayout: React.FC = () => {
     type: 'inventory' | 'equipment'
   ) => {
     if (type === 'inventory') {
-      navigate('/inventory');
+      const inv = item as UniversalInventoryItem;
+      navigate(`/inventory?search=${encodeURIComponent(inv.sku || inv.name)}`);
     } else {
-      navigate('/equipment');
+      const eq = item as EquipmentAsset;
+      navigate(`/equipment?search=${encodeURIComponent(eq.assetTag || eq.name)}`);
     }
   };
 

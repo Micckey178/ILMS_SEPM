@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Boxes,
   Plus,
@@ -24,11 +25,17 @@ import { QRLabelModal } from '../components/QRLabelModal';
 
 export const InventoryPage: React.FC = () => {
   const { activeLab, currentUser, can } = useAuth();
+  const [searchParams] = useSearchParams();
   const [items, setItems] = useState<UniversalInventoryItem[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [filterLowStockOnly, setFilterLowStockOnly] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const q = searchParams.get('search');
+    if (q) setSearchQuery(q);
+  }, [searchParams]);
 
   // Modals state
   const [selectedItemForMovement, setSelectedItemForMovement] = useState<UniversalInventoryItem | null>(null);
