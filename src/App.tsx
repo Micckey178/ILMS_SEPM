@@ -101,6 +101,8 @@ const AppLayout: React.FC = () => {
             <Route path="/" element={<DashboardPage onOpenQRScanner={() => setIsQRScannerOpen(true)} />} />
             <Route path="/schedule" element={<CalendarPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
+            <Route path="/timetable" element={<CalendarPage />} />
+            <Route path="/timetables" element={<CalendarPage />} />
             <Route path="/attendance" element={<AttendancePage />} />
             <Route path="/inventory" element={<InventoryPage />} />
             <Route path="/equipment" element={<EquipmentPage />} />

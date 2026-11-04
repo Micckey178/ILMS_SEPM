@@ -497,8 +497,8 @@ export const CalendarPage: React.FC = () => {
   };
 
   // Helper to extract session for a cell in the Noticeboard Grid
-  const getSessionForSlot = (day: string, slot: '8:30' | '10:45' | '1:30' | '2:30') => {
-    return timetableSessions.find(s => {
+  const getSessionForSlot = (sessionList: PracticalSession[], day: string, slot: '8:30' | '10:45' | '1:30' | '2:30') => {
+    return sessionList.find(s => {
       if (s.date.toLowerCase() !== day.toLowerCase()) return false;
       const start = s.startTime.toLowerCase();
       if (slot === '8:30') return start.includes('8:30') || start.includes('08:30');
@@ -507,6 +507,35 @@ export const CalendarPage: React.FC = () => {
       if (slot === '2:30') return start.includes('2:30') || start.includes('02:30');
       return false;
     });
+  };
+
+  // Helper to extract duty roster for a given set of sessions
+  const getRosterForSessions = (sessionList: PracticalSession[]) => {
+    const map: Record<string, { morning: string[]; afternoon: string[] }> = {
+      Monday: { morning: [], afternoon: [] },
+      Tuesday: { morning: [], afternoon: [] },
+      Wednesday: { morning: [], afternoon: [] },
+      Thursday: { morning: [], afternoon: [] },
+      Friday: { morning: [], afternoon: [] },
+      Saturday: { morning: [], afternoon: [] }
+    };
+
+    sessionList.forEach(s => {
+      const day = s.date;
+      if (map[day]) {
+        const timeHour = parseInt(s.startTime.split(':')[0], 10);
+        const isPM = s.startTime.toLowerCase().includes('pm');
+        const normalizedHour = isPM && timeHour !== 12 ? timeHour + 12 : timeHour;
+
+        if (normalizedHour < 13) {
+          if (!map[day].morning.includes(s.facultyName)) map[day].morning.push(s.facultyName);
+        } else {
+          if (!map[day].afternoon.includes(s.facultyName)) map[day].afternoon.push(s.facultyName);
+        }
+      }
+    });
+
+    return map;
   };
 
   return (
@@ -866,302 +895,352 @@ export const CalendarPage: React.FC = () => {
       {/* VIEW 1: NOTICEBOARD TIMETABLE GRID (DIGITAL POSTER REPLICA) */}
       {/* ======================================================== */}
       {viewMode === 'timetable' && (
-        <div className="space-y-6">
-          {/* Header of Active Timetable Poster */}
-          <div className="p-6 bg-gradient-to-r from-[#FFF8F2] via-white to-[#F0E9FF] border-2 border-[#BCA0F5]/40 rounded-3xl shadow-sm text-center space-y-2">
-            <div className="flex items-center justify-center space-x-2">
-              <span className="px-3 py-0.5 rounded-full bg-[#BCA0F5] text-white text-[11px] font-black uppercase tracking-wider">
-                Official Department Timetable
-              </span>
-              <span className="text-xs font-extrabold text-[#71667D]">
-                Department of Computer Science & Engineering
-              </span>
+        <div className="space-y-8">
+          {/* Faculty Profile No Allotment Warning & Easy Switch */}
+          {isFaculty && facultyOnlyMode && timetableSessions.length === 0 && (
+            <div className="p-6 bg-gradient-to-r from-amber-50 to-[#FFF8F2] border-2 border-amber-300 rounded-3xl text-amber-950 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+              <div className="flex items-center gap-3">
+                <ShieldAlert className="w-7 h-7 text-amber-600 shrink-0" />
+                <div>
+                  <h4 className="font-heading font-black text-sm">No Teaching Sessions Allotted to Current Profile</h4>
+                  <p className="text-xs text-amber-800 mt-0.5">
+                    Your profile (<strong>{currentUser.displayName}</strong>) is not matched on the 11 physical laboratory noticeboards. Switch to department view to see the complete timetable with all periods and teachers.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setFacultyOnlyMode(false)}
+                className="px-5 py-2.5 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shrink-0 shadow-md transition"
+              >
+                View All Department Timetables (11 Labs)
+              </button>
             </div>
+          )}
 
-            <h2 className="font-heading font-black text-2xl sm:text-3xl text-[#332B40]">
-              {selectedLabId === 'ALL'
-                ? isStudent
-                  ? 'Allotted Laboratories Schedule'
-                  : isFaculty && facultyOnlyMode
-                  ? `${currentUser.displayName} — Weekly Duty Schedule`
-                  : 'Comprehensive All-Labs Overview'
-                : currentLab?.name}
-            </h2>
+          {(() => {
+            const labsToDisplay = selectedLabId === 'ALL'
+              ? (isStudent ? studentAllottedLabs : visibleLabs)
+              : (currentLab ? [currentLab] : visibleLabs);
 
-            <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-bold text-[#71667D] pt-1">
-              {currentLab ? (
-                <>
-                  <span className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-[#8961D8]" />
-                    {currentLab.roomNumber}
-                  </span>
-                  <span className="flex items-center gap-1 bg-[#FBE5EF] px-3 py-1 rounded-full text-[#332B40] border border-[#E9DDF1]">
-                    <BadgeCheck className="w-4 h-4 text-[#8961D8]" />
-                    <strong>LAB INCHARGE:</strong> {currentLab.managerName}
-                  </span>
-                </>
-              ) : (
-                <span className="flex items-center gap-1">
-                  <Layers className="w-3.5 h-3.5 text-[#8961D8]" />
-                  {isStudent
-                    ? `${studentAllottedLabs.length} Allotted Laboratories`
-                    : 'All 11 Active Department Laboratories'}
-                </span>
-              )}
+            return (
+              <div className="space-y-10">
+                {labsToDisplay.map(lab => {
+                  const labSessions = sessions.filter(s => {
+                    const matchesLab = s.laboratoryId === lab.id ||
+                      (lab.name.toLowerCase().includes('vinodham') && s.laboratoryId === 'lab-vin-01') ||
+                      (lab.code && s.laboratoryId.toLowerCase().includes(lab.code.toLowerCase()));
+                    if (!matchesLab) return false;
 
-              <span className="flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-[#8961D8]" />
-                Timing: 08:30 AM – 04:30 PM (Mon–Sat)
-              </span>
-            </div>
-          </div>
+                    // Faculty teaching filter
+                    if (isFaculty && facultyOnlyMode && !isCurrentUserTakingClass(s)) return false;
 
-          {/* Time Table Matrix Table */}
-          <div className="bg-white border border-[#E9DDF1] rounded-3xl shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-center min-w-[950px]">
-                <thead>
-                  <tr className="bg-[#FFF8F2] border-b border-[#E9DDF1] text-[11px] font-black text-[#332B40] uppercase tracking-wider">
-                    <th className="py-3.5 px-4 w-24 border-r border-[#E9DDF1]">DAY</th>
-                    <th className="py-3 px-3 border-r border-[#E9DDF1]">
-                      8:30 <br /><span className="text-[10px] font-semibold text-[#71667D]">to 9:30</span>
-                    </th>
-                    <th className="py-3 px-3 border-r border-[#E9DDF1]">
-                      9:30 <br /><span className="text-[10px] font-semibold text-[#71667D]">to 10:30</span>
-                    </th>
-                    <th className="py-3 px-2 w-14 bg-[#FBE5EF]/70 border-r border-[#E9DDF1] text-[#8961D8]">
-                      TEA <br /><span className="text-[9px]">10:30-10:45</span>
-                    </th>
-                    <th className="py-3 px-3 border-r border-[#E9DDF1]">
-                      10:45 <br /><span className="text-[10px] font-semibold text-[#71667D]">to 11:45</span>
-                    </th>
-                    <th className="py-3 px-3 border-r border-[#E9DDF1]">
-                      11:45 <br /><span className="text-[10px] font-semibold text-[#71667D]">to 12:45</span>
-                    </th>
-                    <th className="py-3 px-2 w-16 bg-[#FFF8F2] border-r border-[#E9DDF1] text-[#8961D8]">
-                      LUNCH <br /><span className="text-[9px]">12:45-1:30</span>
-                    </th>
-                    <th className="py-3 px-3 border-r border-[#E9DDF1]">
-                      1:30 <br /><span className="text-[10px] font-semibold text-[#71667D]">to 2:30</span>
-                    </th>
-                    <th className="py-3 px-3 border-r border-[#E9DDF1]">
-                      2:30 <br /><span className="text-[10px] font-semibold text-[#71667D]">to 3:30</span>
-                    </th>
-                    <th className="py-3 px-3">
-                      3:30 <br /><span className="text-[10px] font-semibold text-[#71667D]">to 4:30</span>
-                    </th>
-                  </tr>
-                </thead>
+                    // Faculty name dropdown
+                    if (selectedFaculty !== 'ALL' && !s.facultyName.toLowerCase().includes(selectedFaculty.toLowerCase())) return false;
 
-                <tbody className="divide-y divide-[#E9DDF1] text-xs">
-                  {DAYS_OF_WEEK.map((day, dIdx) => {
-                    const shortDay = DAYS_SHORT[dIdx];
-                    const morningSlot1 = getSessionForSlot(day, '8:30');
-                    const morningSlot2 = getSessionForSlot(day, '10:45');
-                    const afternoonSlot1 = getSessionForSlot(day, '1:30');
-                    const afternoonSlot2 = getSessionForSlot(day, '2:30');
-
-                    // If filtered by day and not matched, hide row
-                    if (selectedDay !== 'ALL' && selectedDay.toLowerCase() !== day.toLowerCase()) {
-                      return null;
+                    // Search query
+                    if (searchQuery) {
+                      const q = searchQuery.toLowerCase();
+                      const match = s.title.toLowerCase().includes(q) ||
+                        s.facultyName.toLowerCase().includes(q) ||
+                        s.courseCode.toLowerCase().includes(q) ||
+                        (s.groupName && s.groupName.toLowerCase().includes(q));
+                      if (!match) return false;
                     }
 
-                    return (
-                      <tr key={day} className="hover:bg-[#FFF8F2]/50 transition">
-                        {/* Day Column */}
-                        <td className="py-4 px-3 font-black text-sm text-[#332B40] bg-[#FFF8F2] border-r border-[#E9DDF1]">
-                          {shortDay}
-                        </td>
+                    return true;
+                  });
 
-                        {/* Morning 8:30 - 10:30 (Spans 2 periods) */}
-                        {morningSlot1 ? (
-                          <td colSpan={2} className="p-2 border-r border-[#E9DDF1]">
-                            <div
-                              onClick={() => setSelectedEvent(morningSlot1)}
-                              className="p-3 rounded-2xl bg-gradient-to-r from-[#F0E9FF] to-[#FBE5EF] border border-[#BCA0F5] shadow-xs hover:shadow-md cursor-pointer transition text-left"
-                            >
-                              <div className="font-heading font-black text-xs text-[#332B40] flex items-center justify-between">
-                                <span>{morningSlot1.groupName || morningSlot1.title}</span>
-                                <span className="text-[10px] font-bold text-[#8961D8]">{morningSlot1.startTime}</span>
-                              </div>
-                              <p className="text-[11px] font-extrabold text-[#8961D8] mt-0.5 truncate">
-                                👨‍🏫 {morningSlot1.facultyName}
-                              </p>
-                              <p className="text-[10px] text-[#71667D] truncate mt-0.5">
-                                {laboratories.find(l => l.id === morningSlot1.laboratoryId)?.name}
-                              </p>
-                            </div>
-                          </td>
-                        ) : (
-                          <>
-                            <td className="p-2 border-r border-[#E9DDF1] text-[#71667D]/40 text-xs italic">—</td>
-                            <td className="p-2 border-r border-[#E9DDF1] text-[#71667D]/40 text-xs italic">—</td>
-                          </>
+                  const roster = getRosterForSessions(labSessions);
+
+                  return (
+                    <div key={lab.id} id={`lab-board-${lab.id}`} className="space-y-4 pt-2">
+                      {/* Noticeboard Header */}
+                      <div className="p-6 bg-gradient-to-r from-[#FFF8F2] via-white to-[#F0E9FF] border-2 border-[#BCA0F5]/40 rounded-3xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <span className="px-3 py-0.5 rounded-full bg-[#BCA0F5] text-white text-[11px] font-black uppercase tracking-wider">
+                              Official Department Timetable
+                            </span>
+                            <span className="text-xs font-extrabold text-[#71667D]">
+                              Department of Computer Science & Engineering
+                            </span>
+                          </div>
+
+                          <h2 className="font-heading font-black text-2xl sm:text-3xl text-[#332B40] mt-1">
+                            {lab.code}: {lab.name}
+                          </h2>
+
+                          <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-[#71667D] pt-1">
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-3.5 h-3.5 text-[#8961D8]" />
+                              {lab.roomNumber}
+                            </span>
+                            <span className="flex items-center gap-1 bg-[#FBE5EF] px-3 py-1 rounded-full text-[#332B40] border border-[#E9DDF1]">
+                              <BadgeCheck className="w-4 h-4 text-[#8961D8]" />
+                              <strong>LAB INCHARGE:</strong> {lab.managerName}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3.5 h-3.5 text-[#8961D8]" />
+                              Timing: 08:30 AM – 04:30 PM (Mon–Sat) • w.e.f: 07/09/2026
+                            </span>
+                          </div>
+                        </div>
+
+                        {selectedLabId === 'ALL' && (
+                          <button
+                            onClick={() => setSelectedLabId(lab.id)}
+                            className="px-4 py-2 rounded-2xl bg-white hover:bg-[#F0E9FF] border border-[#BCA0F5] text-[#8961D8] font-bold text-xs flex items-center gap-1.5 self-start md:self-center shadow-xs"
+                          >
+                            <span>Focus on {lab.code}</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </button>
                         )}
+                      </div>
 
-                        {/* Tea Break Column */}
-                        <td className="bg-[#FBE5EF]/40 border-r border-[#E9DDF1] text-[10px] font-black text-[#8961D8]">
-                          TEA
-                        </td>
+                      {/* Timetable Matrix */}
+                      <div className="bg-white border border-[#E9DDF1] rounded-3xl shadow-sm overflow-hidden">
+                        <div className="overflow-x-auto">
+                          <table className="w-full border-collapse text-center min-w-[950px]">
+                            <thead>
+                              <tr className="bg-[#FFF8F2] border-b border-[#E9DDF1] text-[11px] font-black text-[#332B40] uppercase tracking-wider">
+                                <th className="py-3.5 px-4 w-24 border-r border-[#E9DDF1]">DAY</th>
+                                <th className="py-3 px-3 border-r border-[#E9DDF1]">
+                                  8:30 <br /><span className="text-[10px] font-semibold text-[#71667D]">to 9:30</span>
+                                </th>
+                                <th className="py-3 px-3 border-r border-[#E9DDF1]">
+                                  9:30 <br /><span className="text-[10px] font-semibold text-[#71667D]">to 10:30</span>
+                                </th>
+                                <th className="py-3 px-2 w-14 bg-[#FBE5EF]/70 border-r border-[#E9DDF1] text-[#8961D8]">
+                                  TEA <br /><span className="text-[9px]">10:30-10:45</span>
+                                </th>
+                                <th className="py-3 px-3 border-r border-[#E9DDF1]">
+                                  10:45 <br /><span className="text-[10px] font-semibold text-[#71667D]">to 11:45</span>
+                                </th>
+                                <th className="py-3 px-3 border-r border-[#E9DDF1]">
+                                  11:45 <br /><span className="text-[10px] font-semibold text-[#71667D]">to 12:45</span>
+                                </th>
+                                <th className="py-3 px-2 w-16 bg-[#FFF8F2] border-r border-[#E9DDF1] text-[#8961D8]">
+                                  LUNCH <br /><span className="text-[9px]">12:45-1:30</span>
+                                </th>
+                                <th className="py-3 px-3 border-r border-[#E9DDF1]">
+                                  1:30 <br /><span className="text-[10px] font-semibold text-[#71667D]">to 2:30</span>
+                                </th>
+                                <th className="py-3 px-3 border-r border-[#E9DDF1]">
+                                  2:30 <br /><span className="text-[10px] font-semibold text-[#71667D]">to 3:30</span>
+                                </th>
+                                <th className="py-3 px-3">
+                                  3:30 <br /><span className="text-[10px] font-semibold text-[#71667D]">to 4:30</span>
+                                </th>
+                              </tr>
+                            </thead>
 
-                        {/* Mid-Morning 10:45 - 12:45 (Spans 2 periods) */}
-                        {morningSlot2 ? (
-                          <td colSpan={2} className="p-2 border-r border-[#E9DDF1]">
-                            <div
-                              onClick={() => setSelectedEvent(morningSlot2)}
-                              className="p-3 rounded-2xl bg-gradient-to-r from-[#FFF8F2] to-[#F0E9FF] border border-[#FFD2BF] shadow-xs hover:shadow-md cursor-pointer transition text-left"
-                            >
-                              <div className="font-heading font-black text-xs text-[#332B40] flex items-center justify-between">
-                                <span>{morningSlot2.groupName || morningSlot2.title}</span>
-                                <span className="text-[10px] font-bold text-[#8961D8]">{morningSlot2.startTime}</span>
-                              </div>
-                              <p className="text-[11px] font-extrabold text-[#8961D8] mt-0.5 truncate">
-                                👨‍🏫 {morningSlot2.facultyName}
-                              </p>
-                              <p className="text-[10px] text-[#71667D] truncate mt-0.5">
-                                {laboratories.find(l => l.id === morningSlot2.laboratoryId)?.name}
-                              </p>
-                            </div>
-                          </td>
-                        ) : (
-                          <>
-                            <td className="p-2 border-r border-[#E9DDF1] text-[#71667D]/40 text-xs italic">—</td>
-                            <td className="p-2 border-r border-[#E9DDF1] text-[#71667D]/40 text-xs italic">—</td>
-                          </>
-                        )}
+                            <tbody className="divide-y divide-[#E9DDF1] text-xs">
+                              {DAYS_OF_WEEK.map((day, dIdx) => {
+                                const shortDay = DAYS_SHORT[dIdx];
+                                const morningSlot1 = getSessionForSlot(labSessions, day, '8:30');
+                                const morningSlot2 = getSessionForSlot(labSessions, day, '10:45');
+                                const afternoonSlot1 = getSessionForSlot(labSessions, day, '1:30');
+                                const afternoonSlot2 = getSessionForSlot(labSessions, day, '2:30');
 
-                        {/* Lunch Break Column */}
-                        <td className="bg-[#FFF8F2] border-r border-[#E9DDF1] text-[10px] font-black text-[#8961D8]">
-                          LUNCH
-                        </td>
+                                if (selectedDay !== 'ALL' && selectedDay.toLowerCase() !== day.toLowerCase()) {
+                                  return null;
+                                }
 
-                        {/* Afternoon Slots (1:30 - 4:30) */}
-                        {afternoonSlot1 ? (
-                          <>
-                            {/* Spans 1:30 - 3:30 (2 periods: 1:30-2:30 and 2:30-3:30) */}
-                            <td colSpan={2} className="p-2 border-r border-[#E9DDF1]">
-                              <div
-                                onClick={() => setSelectedEvent(afternoonSlot1)}
-                                className="p-3 rounded-2xl bg-gradient-to-r from-[#F0E9FF] to-[#FBE5EF] border border-[#BCA0F5] shadow-xs hover:shadow-md cursor-pointer transition text-left"
-                              >
-                                <div className="font-heading font-black text-xs text-[#332B40] flex items-center justify-between">
-                                  <span>{afternoonSlot1.groupName || afternoonSlot1.title}</span>
-                                  <span className="text-[10px] font-bold text-[#8961D8]">{afternoonSlot1.startTime}</span>
-                                </div>
-                                <p className="text-[11px] font-extrabold text-[#8961D8] mt-0.5 truncate">
-                                  👨‍🏫 {afternoonSlot1.facultyName}
-                                </p>
-                                <p className="text-[10px] text-[#71667D] truncate mt-0.5">
-                                  {laboratories.find(l => l.id === afternoonSlot1.laboratoryId)?.name}
-                                </p>
-                              </div>
-                            </td>
-                            {/* 3:30 - 4:30 column */}
-                            <td className="p-2 text-[#71667D]/40 text-xs italic">—</td>
-                          </>
-                        ) : afternoonSlot2 ? (
-                          <>
-                            {/* 1:30 - 2:30 column empty */}
-                            <td className="p-2 border-r border-[#E9DDF1] text-[#71667D]/40 text-xs italic">—</td>
-                            {/* Spans 2:30 - 4:30 (2 periods: 2:30-3:30 and 3:30-4:30) */}
-                            <td colSpan={2} className="p-2">
-                              <div
-                                onClick={() => setSelectedEvent(afternoonSlot2)}
-                                className="p-3 rounded-2xl bg-gradient-to-r from-[#FBE5EF] to-[#FFF8F2] border border-[#E9DDF1] shadow-xs hover:shadow-md cursor-pointer transition text-left"
-                              >
-                                <div className="font-heading font-black text-xs text-[#332B40] flex items-center justify-between">
-                                  <span>{afternoonSlot2.groupName || afternoonSlot2.title}</span>
-                                  <span className="text-[10px] font-bold text-[#8961D8]">{afternoonSlot2.startTime}</span>
-                                </div>
-                                <p className="text-[11px] font-extrabold text-[#8961D8] mt-0.5 truncate">
-                                  👨‍🏫 {afternoonSlot2.facultyName}
-                                </p>
-                                <p className="text-[10px] text-[#71667D] truncate mt-0.5">
-                                  {laboratories.find(l => l.id === afternoonSlot2.laboratoryId)?.name}
-                                </p>
-                              </div>
-                            </td>
-                          </>
-                        ) : (
-                          <>
-                            <td className="p-2 border-r border-[#E9DDF1] text-[#71667D]/40 text-xs italic">—</td>
-                            <td className="p-2 border-r border-[#E9DDF1] text-[#71667D]/40 text-xs italic">—</td>
-                            <td className="p-2 text-[#71667D]/40 text-xs italic">—</td>
-                          </>
-                        )}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                                return (
+                                  <tr key={day} className="hover:bg-[#FFF8F2]/50 transition">
+                                    <td className="py-4 px-3 font-black text-sm text-[#332B40] bg-[#FFF8F2] border-r border-[#E9DDF1]">
+                                      {shortDay}
+                                    </td>
 
-          {/* Authentic Faculty Duty Roster Table (Morning vs. Afternoon) */}
-          <div className="p-6 bg-white border border-[#E9DDF1] rounded-3xl shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-heading font-black text-lg text-[#332B40] flex items-center gap-2">
-                  <GraduationCap className="w-5 h-5 text-[#8961D8]" />
-                  Faculty Duty Roster (Morning vs. Afternoon)
-                </h3>
-                <p className="text-xs text-[#71667D]">
-                  Official department faculty breakdown by morning (08:30 - 12:45) and afternoon (01:30 - 04:30) slots.
-                </p>
+                                    {/* Morning 8:30 - 10:30 */}
+                                    {morningSlot1 ? (
+                                      <td colSpan={2} className="p-2 border-r border-[#E9DDF1]">
+                                        <div
+                                          onClick={() => setSelectedEvent(morningSlot1)}
+                                          className="p-3 rounded-2xl bg-gradient-to-r from-[#F0E9FF] to-[#FBE5EF] border border-[#BCA0F5] shadow-xs hover:shadow-md cursor-pointer transition text-left"
+                                        >
+                                          <div className="font-heading font-black text-xs text-[#332B40] flex items-center justify-between">
+                                            <span>{morningSlot1.groupName || morningSlot1.title}</span>
+                                            <span className="text-[10px] font-bold text-[#8961D8]">{morningSlot1.courseCode}</span>
+                                          </div>
+                                          <p className="text-[11px] font-extrabold text-[#8961D8] mt-0.5 truncate">
+                                            👨‍🏫 {morningSlot1.facultyName}
+                                          </p>
+                                          <p className="text-[10px] text-[#71667D] truncate mt-0.5">
+                                            {morningSlot1.title}
+                                          </p>
+                                        </div>
+                                      </td>
+                                    ) : (
+                                      <>
+                                        <td className="p-2 border-r border-[#E9DDF1] text-[#71667D]/40 text-xs italic">—</td>
+                                        <td className="p-2 border-r border-[#E9DDF1] text-[#71667D]/40 text-xs italic">—</td>
+                                      </>
+                                    )}
+
+                                    {/* Tea Break */}
+                                    <td className="bg-[#FBE5EF]/40 border-r border-[#E9DDF1] text-[10px] font-black text-[#8961D8]">
+                                      TEA
+                                    </td>
+
+                                    {/* Mid-Morning 10:45 - 12:45 */}
+                                    {morningSlot2 ? (
+                                      <td colSpan={2} className="p-2 border-r border-[#E9DDF1]">
+                                        <div
+                                          onClick={() => setSelectedEvent(morningSlot2)}
+                                          className="p-3 rounded-2xl bg-gradient-to-r from-[#FFF8F2] to-[#F0E9FF] border border-[#FFD2BF] shadow-xs hover:shadow-md cursor-pointer transition text-left"
+                                        >
+                                          <div className="font-heading font-black text-xs text-[#332B40] flex items-center justify-between">
+                                            <span>{morningSlot2.groupName || morningSlot2.title}</span>
+                                            <span className="text-[10px] font-bold text-[#8961D8]">{morningSlot2.courseCode}</span>
+                                          </div>
+                                          <p className="text-[11px] font-extrabold text-[#8961D8] mt-0.5 truncate">
+                                            👨‍🏫 {morningSlot2.facultyName}
+                                          </p>
+                                          <p className="text-[10px] text-[#71667D] truncate mt-0.5">
+                                            {morningSlot2.title}
+                                          </p>
+                                        </div>
+                                      </td>
+                                    ) : (
+                                      <>
+                                        <td className="p-2 border-r border-[#E9DDF1] text-[#71667D]/40 text-xs italic">—</td>
+                                        <td className="p-2 border-r border-[#E9DDF1] text-[#71667D]/40 text-xs italic">—</td>
+                                      </>
+                                    )}
+
+                                    {/* Lunch Break */}
+                                    <td className="bg-[#FFF8F2] border-r border-[#E9DDF1] text-[10px] font-black text-[#8961D8]">
+                                      LUNCH
+                                    </td>
+
+                                    {/* Afternoon Slots */}
+                                    {afternoonSlot1 ? (
+                                      <>
+                                        <td colSpan={2} className="p-2 border-r border-[#E9DDF1]">
+                                          <div
+                                            onClick={() => setSelectedEvent(afternoonSlot1)}
+                                            className="p-3 rounded-2xl bg-gradient-to-r from-[#F0E9FF] to-[#FBE5EF] border border-[#BCA0F5] shadow-xs hover:shadow-md cursor-pointer transition text-left"
+                                          >
+                                            <div className="font-heading font-black text-xs text-[#332B40] flex items-center justify-between">
+                                              <span>{afternoonSlot1.groupName || afternoonSlot1.title}</span>
+                                              <span className="text-[10px] font-bold text-[#8961D8]">{afternoonSlot1.courseCode}</span>
+                                            </div>
+                                            <p className="text-[11px] font-extrabold text-[#8961D8] mt-0.5 truncate">
+                                              👨‍🏫 {afternoonSlot1.facultyName}
+                                            </p>
+                                            <p className="text-[10px] text-[#71667D] truncate mt-0.5">
+                                              {afternoonSlot1.title}
+                                            </p>
+                                          </div>
+                                        </td>
+                                        <td className="p-2 text-[#71667D]/40 text-xs italic">—</td>
+                                      </>
+                                    ) : afternoonSlot2 ? (
+                                      <>
+                                        <td className="p-2 border-r border-[#E9DDF1] text-[#71667D]/40 text-xs italic">—</td>
+                                        <td colSpan={2} className="p-2">
+                                          <div
+                                            onClick={() => setSelectedEvent(afternoonSlot2)}
+                                            className="p-3 rounded-2xl bg-gradient-to-r from-[#FBE5EF] to-[#FFF8F2] border border-[#E9DDF1] shadow-xs hover:shadow-md cursor-pointer transition text-left"
+                                          >
+                                            <div className="font-heading font-black text-xs text-[#332B40] flex items-center justify-between">
+                                              <span>{afternoonSlot2.groupName || afternoonSlot2.title}</span>
+                                              <span className="text-[10px] font-bold text-[#8961D8]">{afternoonSlot2.courseCode}</span>
+                                            </div>
+                                            <p className="text-[11px] font-extrabold text-[#8961D8] mt-0.5 truncate">
+                                              👨‍🏫 {afternoonSlot2.facultyName}
+                                            </p>
+                                            <p className="text-[10px] text-[#71667D] truncate mt-0.5">
+                                              {afternoonSlot2.title}
+                                            </p>
+                                          </div>
+                                        </td>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <td className="p-2 border-r border-[#E9DDF1] text-[#71667D]/40 text-xs italic">—</td>
+                                        <td className="p-2 border-r border-[#E9DDF1] text-[#71667D]/40 text-xs italic">—</td>
+                                        <td className="p-2 text-[#71667D]/40 text-xs italic">—</td>
+                                      </>
+                                    )}
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* Faculty Duty Roster Table for this Lab */}
+                      <div className="p-5 bg-white border border-[#E9DDF1] rounded-3xl shadow-xs space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-heading font-black text-base text-[#332B40] flex items-center gap-2">
+                            <GraduationCap className="w-4 h-4 text-[#8961D8]" />
+                            Faculty Duty Roster for {lab.code} ({lab.name})
+                          </h4>
+                          <span className="text-xs font-bold text-[#8961D8]">
+                            Odd Sem 2026-27 Roster
+                          </span>
+                        </div>
+
+                        <div className="overflow-x-auto rounded-2xl border border-[#E9DDF1]">
+                          <table className="w-full text-left border-collapse text-xs">
+                            <thead>
+                              <tr className="bg-[#FFF8F2] border-b border-[#E9DDF1] font-heading font-black text-[#332B40] uppercase tracking-wider text-[11px]">
+                                <th className="p-3 w-28 border-r border-[#E9DDF1]">DAY</th>
+                                <th className="p-3 border-r border-[#E9DDF1]">MORNING FACULTY (8:30 AM – 12:45 PM)</th>
+                                <th className="p-3">AFTERNOON FACULTY (1:30 PM – 4:30 PM)</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-[#E9DDF1]">
+                              {DAYS_OF_WEEK.map((day, idx) => {
+                                const short = DAYS_SHORT[idx];
+                                const r = roster[day];
+                                return (
+                                  <tr key={day} className="hover:bg-[#FFF8F2]/60">
+                                    <td className="p-3 font-black text-[#332B40] bg-[#FFF8F2] border-r border-[#E9DDF1]">
+                                      {short} ({day})
+                                    </td>
+                                    <td className="p-3 font-semibold text-[#332B40] border-r border-[#E9DDF1]">
+                                      {r.morning.length > 0 ? (
+                                        <div className="flex flex-wrap gap-1.5">
+                                          {r.morning.map((f, i) => (
+                                            <span key={i} className="px-2.5 py-1 rounded-full bg-[#F0E9FF] border border-[#BCA0F5]/50 text-[#8961D8] font-bold text-xs">
+                                              {f}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      ) : (
+                                        <span className="text-[#71667D]/40 italic">—</span>
+                                      )}
+                                    </td>
+                                    <td className="p-3 font-semibold text-[#332B40]">
+                                      {r.afternoon.length > 0 ? (
+                                        <div className="flex flex-wrap gap-1.5">
+                                          {r.afternoon.map((f, i) => (
+                                            <span key={i} className="px-2.5 py-1 rounded-full bg-[#FBE5EF] border border-[#E9DDF1] text-[#332B40] font-bold text-xs">
+                                              {f}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      ) : (
+                                        <span className="text-[#71667D]/40 italic">—</span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            </div>
-
-            <div className="overflow-x-auto rounded-2xl border border-[#E9DDF1]">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="bg-[#FFF8F2] border-b border-[#E9DDF1] font-heading font-black text-[#332B40] uppercase tracking-wider text-[11px]">
-                    <th className="p-3 w-28 border-r border-[#E9DDF1]">DAY</th>
-                    <th className="p-3 border-r border-[#E9DDF1]">MORNING FACULTY (8:30 AM – 12:45 PM)</th>
-                    <th className="p-3">AFTERNOON FACULTY (1:30 PM – 4:30 PM)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#E9DDF1]">
-                  {DAYS_OF_WEEK.map((day, idx) => {
-                    const short = DAYS_SHORT[idx];
-                    const roster = noticeboardFacultyRoster[day];
-                    return (
-                      <tr key={day} className="hover:bg-[#FFF8F2]/60">
-                        <td className="p-3 font-black text-[#332B40] bg-[#FFF8F2] border-r border-[#E9DDF1]">
-                          {short} ({day})
-                        </td>
-                        <td className="p-3 font-semibold text-[#332B40] border-r border-[#E9DDF1]">
-                          {roster.morning.length > 0 ? (
-                            <div className="flex flex-wrap gap-1.5">
-                              {roster.morning.map((f, i) => (
-                                <span key={i} className="px-2.5 py-1 rounded-full bg-[#F0E9FF] border border-[#BCA0F5]/50 text-[#8961D8] font-bold text-xs">
-                                  {f}
-                                </span>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-[#71667D]/40 italic">—</span>
-                          )}
-                        </td>
-                        <td className="p-3 font-semibold text-[#332B40]">
-                          {roster.afternoon.length > 0 ? (
-                            <div className="flex flex-wrap gap-1.5">
-                              {roster.afternoon.map((f, i) => (
-                                <span key={i} className="px-2.5 py-1 rounded-full bg-[#FBE5EF] border border-[#E9DDF1] text-[#332B40] font-bold text-xs">
-                                  {f}
-                                </span>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-[#71667D]/40 italic">—</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
+            );
+          })()}
         </div>
       )}
 

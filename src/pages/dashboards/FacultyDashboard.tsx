@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   BookOpen,
   CalendarCheck,
+  Calendar,
   Cpu,
   Users,
   FlaskConical,
@@ -25,6 +27,7 @@ export const FacultyDashboard: React.FC<FacultyDashboardProps> = ({
   onOpenLiveAvailability,
   onOpenQRScanner
 }) => {
+  const navigate = useNavigate();
   const { activeLab, currentUser } = useAuth();
   const [sessions, setSessions] = useState<PracticalSession[]>([]);
   const [equipment, setEquipment] = useState<EquipmentAsset[]>([]);
@@ -35,12 +38,22 @@ export const FacultyDashboard: React.FC<FacultyDashboardProps> = ({
     const loadData = async () => {
       setLoading(true);
       try {
-        const [ss, eq, bk] = await Promise.all([
-          DataService.getPracticalSessions(activeLab?.id),
+        const [allSess, eq, bk] = await Promise.all([
+          DataService.getPracticalSessions(),
           DataService.getEquipment(activeLab?.id),
           DataService.getBookings(activeLab?.id)
         ]);
-        setSessions(ss);
+
+        const userClean = (currentUser.displayName || '').toLowerCase().replace(/\([^)]*\)/g, '').trim();
+        const facultySessions = allSess.filter(s => {
+          if (s.facultyId && s.facultyId === currentUser.id) return true;
+          const facClean = (s.facultyName || '').toLowerCase();
+          if (facClean.includes(userClean) || userClean.includes(facClean)) return true;
+          const words = userClean.split(/\s+/).filter(w => w.length >= 3 && !['prof', 'dr.', 'mrs.', 'mr.', 'lead', 'system'].includes(w));
+          return words.some(w => facClean.includes(w));
+        });
+
+        setSessions(facultySessions.length > 0 ? facultySessions : allSess.slice(0, 8));
         setEquipment(eq);
         setBookings(bk);
       } catch (err) {
@@ -50,7 +63,7 @@ export const FacultyDashboard: React.FC<FacultyDashboardProps> = ({
       }
     };
     loadData();
-  }, [activeLab]);
+  }, [activeLab, currentUser]);
 
   if (loading) {
     return (
@@ -155,9 +168,18 @@ export const FacultyDashboard: React.FC<FacultyDashboardProps> = ({
               Syllabus exercises, reserved experiment kits, student attendance & observation logs
             </p>
           </div>
-          <span className="text-xs px-3 py-1 bg-purple-100 text-purple-700 rounded-full font-bold">
-            Semester Practical Track
-          </span>
+          <div className="flex items-center space-x-2">
+            <span className="text-xs px-3 py-1 bg-purple-100 text-purple-700 rounded-full font-bold">
+              Semester Practical Track
+            </span>
+            <button
+              type="button"
+              onClick={() => navigate('/schedule')}
+              className="text-xs font-black text-[#8961D8] hover:underline flex items-center gap-1"
+            >
+              <span>View Department Timetables →</span>
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

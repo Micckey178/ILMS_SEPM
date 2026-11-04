@@ -39,7 +39,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         group: 'Overview',
         items: [
           { to: '/', label: 'Overview Dashboard', icon: LayoutDashboard },
-          { to: '/schedule', label: 'Department Timetables', icon: Calendar },
+          { to: '/schedule', label: 'Department Timetables & Schedule', icon: Calendar },
         ]
       },
       {

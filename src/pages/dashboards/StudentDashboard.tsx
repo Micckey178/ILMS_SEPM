@@ -44,14 +44,22 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     const loadStudentData = async () => {
       setLoading(true);
       try {
-        const [sessions, allBookings, allTransactions, equipment] = await Promise.all([
-          DataService.getPracticalSessions(activeLab?.id),
+        const allottedIds = currentUser.assignedLabs && currentUser.assignedLabs.length > 0
+          ? currentUser.assignedLabs
+          : (currentUser.assignedLabId ? [currentUser.assignedLabId] : (activeLab ? [activeLab.id] : []));
+
+        const [allSessionsList, allBookings, allTransactions, equipment] = await Promise.all([
+          DataService.getPracticalSessions(),
           DataService.getBookings(activeLab?.id),
           DataService.getIssueReturnTransactions(activeLab?.id),
           DataService.getEquipment(activeLab?.id)
         ]);
 
-        setMySessions(sessions);
+        const studentSessions = allSessionsList.filter(s =>
+          allottedIds.length === 0 || allottedIds.includes(s.laboratoryId)
+        );
+
+        setMySessions(studentSessions);
         // Filter strictly to current student's records for privacy
         setMyBookings(allBookings.filter(b => b.userId === currentUser.id));
         setMyLoans(allTransactions.filter(l => l.borrowerId === currentUser.id));
@@ -179,7 +187,16 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             <h3 className="font-heading font-extrabold text-lg text-foreground dark:text-white">
               Upcoming Practical Sessions
             </h3>
-            <span className="text-xs font-bold text-purple-600 font-mono">Curriculum</span>
+            <div className="flex items-center space-x-2">
+              <span className="text-xs font-bold text-purple-600 font-mono">Curriculum</span>
+              <button
+                type="button"
+                onClick={() => navigate('/schedule')}
+                className="text-xs font-black text-[#8961D8] hover:underline flex items-center gap-1"
+              >
+                <span>View Full Timetable →</span>
+              </button>
+            </div>
           </div>
 
           <div className="space-y-3">
