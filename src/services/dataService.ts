@@ -177,7 +177,34 @@ class LocalStoreManager {
   public getUsers(): UserProfile[] { return this.get('users', INITIAL_USERS); }
   public setUsers(users: UserProfile[]) { this.set('users', users); }
 
-  public getLabs(): Laboratory[] { return this.get('laboratories', INITIAL_LABORATORIES); }
+  public getLabs(): Laboratory[] {
+    const labs = this.get('laboratories', INITIAL_LABORATORIES);
+    const standardCodes: Record<string, string> = {
+      'lab-atl-01': 'CS-01',
+      'lab-atl-02': 'CS-02',
+      'lab-atl-03': 'CS-03',
+      'lab-sll-01': 'CS-04',
+      'lab-sll-02': 'CS-05',
+      'lab-bfl-01': 'CS-06',
+      'lab-bfl-02': 'CS-07',
+      'lab-bfl-03': 'CS-08',
+      'lab-vin-01': 'CS-09',
+      'lab-cbl-01': 'CS-10',
+      'lab-cbl-02': 'CS-11'
+    };
+    let modified = false;
+    const standardized = labs.map(l => {
+      if (standardCodes[l.id] && l.code !== standardCodes[l.id]) {
+        modified = true;
+        return { ...l, code: standardCodes[l.id] };
+      }
+      return l;
+    });
+    if (modified) {
+      this.set('laboratories', standardized);
+    }
+    return standardized;
+  }
   public setLabs(labs: Laboratory[]) { this.set('laboratories', labs); }
 
   public getInventory(): UniversalInventoryItem[] { return this.get('inventory', INITIAL_INVENTORY); }

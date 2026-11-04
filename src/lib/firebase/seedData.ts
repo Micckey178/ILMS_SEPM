@@ -537,7 +537,7 @@ export const INITIAL_LABORATORIES: Laboratory[] = [
   {
     id: 'lab-atl-01',
     name: 'Alan Turing Lab - 1',
-    code: 'ATL-01',
+    code: 'CS-01',
     type: 'computer_science',
     organizationId: 'org-sjbit-01',
     campusId: 'campus-sjbit',
@@ -560,7 +560,7 @@ export const INITIAL_LABORATORIES: Laboratory[] = [
   {
     id: 'lab-atl-02',
     name: 'Alan Turing Lab - 2',
-    code: 'ATL-02',
+    code: 'CS-02',
     type: 'computer_science',
     organizationId: 'org-sjbit-01',
     campusId: 'campus-sjbit',
@@ -583,7 +583,7 @@ export const INITIAL_LABORATORIES: Laboratory[] = [
   {
     id: 'lab-atl-03',
     name: 'Alan Turing Lab - 3',
-    code: 'ATL-03',
+    code: 'CS-03',
     type: 'computer_science',
     organizationId: 'org-sjbit-01',
     campusId: 'campus-sjbit',
@@ -606,7 +606,7 @@ export const INITIAL_LABORATORIES: Laboratory[] = [
   {
     id: 'lab-sll-01',
     name: 'Sutherland & Lee Lab - 1',
-    code: 'SLL-01',
+    code: 'CS-04',
     type: 'computer_science',
     organizationId: 'org-sjbit-01',
     campusId: 'campus-sjbit',
@@ -629,7 +629,7 @@ export const INITIAL_LABORATORIES: Laboratory[] = [
   {
     id: 'lab-sll-02',
     name: 'Sutherland & Lee Lab - 2',
-    code: 'SLL-02',
+    code: 'CS-05',
     type: 'computer_science',
     organizationId: 'org-sjbit-01',
     campusId: 'campus-sjbit',
@@ -652,7 +652,7 @@ export const INITIAL_LABORATORIES: Laboratory[] = [
   {
     id: 'lab-bfl-01',
     name: 'Bellmen Ford Lab - 1',
-    code: 'BFL-01',
+    code: 'CS-06',
     type: 'computer_science',
     organizationId: 'org-sjbit-01',
     campusId: 'campus-sjbit',
@@ -675,7 +675,7 @@ export const INITIAL_LABORATORIES: Laboratory[] = [
   {
     id: 'lab-bfl-02',
     name: 'Bellmen Ford Lab - 2',
-    code: 'BFL-02',
+    code: 'CS-07',
     type: 'computer_science',
     organizationId: 'org-sjbit-01',
     campusId: 'campus-sjbit',
@@ -698,7 +698,7 @@ export const INITIAL_LABORATORIES: Laboratory[] = [
   {
     id: 'lab-bfl-03',
     name: 'Bellmen Ford Lab - 3',
-    code: 'BFL-03',
+    code: 'CS-08',
     type: 'computer_science',
     organizationId: 'org-sjbit-01',
     campusId: 'campus-sjbit',
@@ -721,7 +721,7 @@ export const INITIAL_LABORATORIES: Laboratory[] = [
   {
     id: 'lab-vin-01',
     name: 'Vinodham Lab',
-    code: 'VIN-01',
+    code: 'CS-09',
     type: 'computer_science',
     organizationId: 'org-sjbit-01',
     campusId: 'campus-sjbit',
@@ -744,7 +744,7 @@ export const INITIAL_LABORATORIES: Laboratory[] = [
   {
     id: 'lab-cbl-01',
     name: 'Charles Babbage Lab - 01',
-    code: 'CBL-01',
+    code: 'CS-10',
     type: 'computer_science',
     organizationId: 'org-sjbit-01',
     campusId: 'campus-sjbit',
@@ -767,7 +767,7 @@ export const INITIAL_LABORATORIES: Laboratory[] = [
   {
     id: 'lab-cbl-02',
     name: 'Charles Babbage Lab - 02',
-    code: 'CBL-02',
+    code: 'CS-11',
     type: 'computer_science',
     organizationId: 'org-sjbit-01',
     campusId: 'campus-sjbit',

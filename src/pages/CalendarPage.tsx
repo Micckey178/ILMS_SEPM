@@ -48,6 +48,12 @@ export const CalendarPage: React.FC = () => {
   const [maintenances, setMaintenances] = useState<MaintenanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [selectedDayDetail, setSelectedDayDetail] = useState<{
+    dateStr: string;
+    dayNum: number;
+    dayName: string;
+    events: any[];
+  } | null>(null);
 
   // Role Checks
   const isStudent = currentUser.role === 'student';
@@ -144,6 +150,29 @@ export const CalendarPage: React.FC = () => {
     return laboratories;
   }, [isStudent, currentUser, laboratories]);
 
+  // Faculty teaching labs list (labs where this faculty member conducts classes)
+  const facultyTeachingLabs = useMemo(() => {
+    if (!isFaculty) return laboratories;
+    const labIds = new Set(sessions.filter(isCurrentUserTakingClass).map(s => s.laboratoryId));
+    const flabs = laboratories.filter(l => labIds.has(l.id));
+    return flabs.length > 0 ? flabs : laboratories;
+  }, [isFaculty, sessions, laboratories, currentUser]);
+
+  // Laboratories to display in the selector strip & filter dropdown
+  // Enforces user requirement:
+  // - For Students: ONLY allotted laboratories appear (not all college labs)
+  // - For Faculty: ONLY laboratories where they conduct classes appear
+  // - For Admin: All 11 laboratories appear
+  const visibleLabs = useMemo(() => {
+    if (isStudent) {
+      return studentAllottedLabs.filter(l => l.id !== 'lab-chem-01');
+    }
+    if (isFaculty && facultyOnlyMode) {
+      return facultyTeachingLabs.filter(l => l.id !== 'lab-chem-01');
+    }
+    return laboratories.filter(l => l.id !== 'lab-chem-01');
+  }, [isStudent, isFaculty, facultyOnlyMode, studentAllottedLabs, facultyTeachingLabs, laboratories]);
+
   // Selected laboratory object
   const currentLab = useMemo(() => {
     if (selectedLabId === 'ALL') return null;
@@ -198,6 +227,15 @@ export const CalendarPage: React.FC = () => {
         // Condition B: Faculty Teaching Check
         if (isFaculty && facultyOnlyMode && !isCurrentUserTakingClass(s)) {
           return;
+        }
+
+        // Condition C: Specific Teacher Filter (Integrates specific teacher's timetable)
+        if (selectedFaculty !== 'ALL') {
+          const facClean = (s.facultyName || '').toLowerCase();
+          const targetClean = selectedFaculty.toLowerCase();
+          if (!facClean.includes(targetClean) && !targetClean.includes(facClean)) {
+            return;
+          }
         }
 
         const sessionDay = s.date?.toLowerCase().trim();
@@ -410,6 +448,17 @@ export const CalendarPage: React.FC = () => {
   const totalGridCells = Math.ceil((firstDayIndex + daysInMonth) / 7) * 7;
   const trailingEmptyCount = totalGridCells - (firstDayIndex + daysInMonth);
 
+  const handleDayClick = (dateStr: string, dayNum: number, dayEvents: any[]) => {
+    const d = new Date(year, month, dayNum);
+    const dayName = d.toLocaleDateString([], { weekday: 'long' });
+    setSelectedDayDetail({
+      dateStr,
+      dayNum,
+      dayName,
+      events: dayEvents
+    });
+  };
+
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
@@ -615,9 +664,17 @@ export const CalendarPage: React.FC = () => {
             <Building2 className="w-4 h-4 text-[#8961D8]" />
             Select Individual Laboratory or All Labs:
           </span>
-          {isStudent && (
+          {isStudent ? (
+            <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+              🎓 Student Allotted: {studentAllottedLabs.length} Assigned Laboratories
+            </span>
+          ) : isFaculty && facultyOnlyMode ? (
+            <span className="text-[11px] font-bold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full border border-purple-200">
+              👨‍🏫 Teaching Schedule: {facultyTeachingLabs.length} Active Laboratories
+            </span>
+          ) : (
             <span className="text-[11px] font-semibold text-[#71667D]">
-              Showing only your allotted laboratories ({studentAllottedLabs.length} assigned)
+              All 11 CSE Department Laboratories (CS-01 to CS-11)
             </span>
           )}
         </div>
@@ -634,38 +691,36 @@ export const CalendarPage: React.FC = () => {
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
-            <span>{isStudent ? 'All My Allotted Labs' : 'All 11 Laboratories'}</span>
+            <span>{isStudent ? 'All My Allotted Labs' : isFaculty ? 'All My Teaching Labs' : 'All 11 Laboratories'}</span>
           </button>
 
           {/* Each Lab Separately */}
-          {laboratories
-            .filter(l => l.id !== 'lab-chem-01')
-            .map(lab => {
-              const allotted = isStudentAllotted(lab.id);
-              const isSelected = selectedLabId === lab.id;
+          {visibleLabs.map(lab => {
+            const allotted = isStudentAllotted(lab.id);
+            const isSelected = selectedLabId === lab.id;
 
-              return (
-                <button
-                  key={lab.id}
-                  onClick={() => setSelectedLabId(lab.id)}
-                  className={`px-3.5 py-2 rounded-2xl text-xs font-bold transition shrink-0 flex items-center space-x-1.5 border ${
-                    isSelected
-                      ? 'bg-gradient-to-r from-[#BCA0F5] to-[#8961D8] text-white border-transparent shadow-md'
-                      : isStudent && allotted
-                      ? 'bg-[#E8F8F0] hover:bg-[#D4F4E4] text-[#1E7E52] border-[#A7E7C4]'
-                      : isStudent && !allotted
-                      ? 'bg-[#F9F9FB] text-[#71667D]/60 border-[#E9DDF1] hover:bg-slate-100'
-                      : 'bg-[#FFF8F2] hover:bg-[#F0E9FF] text-[#332B40] border-[#E9DDF1]'
-                  }`}
-                >
-                  <span className="font-mono font-black">{lab.code}</span>
-                  <span className="truncate max-w-[140px]">{lab.name.replace('Laboratory', 'Lab')}</span>
-                  {isStudent && allotted && !isSelected && (
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" title="Allotted to you" />
-                  )}
-                </button>
-              );
-            })}
+            return (
+              <button
+                key={lab.id}
+                onClick={() => setSelectedLabId(lab.id)}
+                className={`px-3.5 py-2 rounded-2xl text-xs font-bold transition shrink-0 flex items-center space-x-2 border ${
+                  isSelected
+                    ? 'bg-gradient-to-r from-[#BCA0F5] to-[#8961D8] text-white border-transparent shadow-md'
+                    : isStudent && allotted
+                    ? 'bg-[#E8F8F0] hover:bg-[#D4F4E4] text-[#1E7E52] border-[#A7E7C4]'
+                    : isStudent && !allotted
+                    ? 'bg-[#F9F9FB] text-[#71667D]/60 border-[#E9DDF1] hover:bg-slate-100'
+                    : 'bg-[#FFF8F2] hover:bg-[#F0E9FF] text-[#332B40] border-[#E9DDF1]'
+                }`}
+              >
+                <span className="font-mono font-black">{lab.code}</span>
+                <span className="uppercase font-bold">{lab.name.replace('Laboratory', 'Lab')}</span>
+                {isStudent && allotted && !isSelected && (
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" title="Allotted to you" />
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -693,18 +748,36 @@ export const CalendarPage: React.FC = () => {
               className="w-full px-3.5 py-2.5 bg-[#FFF8F2] border border-[#E9DDF1] rounded-2xl text-xs font-bold text-[#332B40] focus:outline-none focus:ring-2 focus:ring-[#BCA0F5]"
             >
               <option value="ALL">
-                {isStudent ? '✨ All My Allotted Laboratories' : '✨ All 11 CSE Laboratories'}
+                {isStudent ? '✨ All My Allotted Laboratories' : isFaculty ? '✨ All My Teaching Laboratories' : '✨ All 11 CSE Laboratories'}
               </option>
-              {laboratories
-                .filter(l => l.id !== 'lab-chem-01')
-                .map(lab => {
-                  const allotted = isStudentAllotted(lab.id);
-                  return (
-                    <option key={lab.id} value={lab.id}>
-                      {lab.name} ({lab.code}) — {isStudent ? (allotted ? '✅ Allotted' : '❌ Not Allotted') : `Incharge: ${lab.managerName}`}
-                    </option>
-                  );
-                })}
+              {visibleLabs.map(lab => (
+                <option key={lab.id} value={lab.id}>
+                  {lab.code} — {lab.name} ({lab.roomNumber})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Faculty / Instructor Dropdown Filter (Allows Student & Faculty to integrate specific teacher's timetable) */}
+          <div className="flex items-center gap-2 min-w-[220px]">
+            <GraduationCap className="w-4 h-4 text-[#8961D8] shrink-0" />
+            <select
+              value={selectedFaculty}
+              onChange={e => setSelectedFaculty(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-[#FFF8F2] border border-[#E9DDF1] rounded-2xl text-xs font-bold text-[#332B40] focus:outline-none focus:ring-2 focus:ring-[#BCA0F5]"
+            >
+              <option value="ALL">
+                {isFaculty && facultyOnlyMode
+                  ? '👨‍🏫 My Teaching Classes (Personal)'
+                  : isStudent
+                  ? '👨‍🏫 All Allotted Teachers'
+                  : '👨‍🏫 All Faculty Instructors'}
+              </option>
+              {allFacultyNames.map(fac => (
+                <option key={fac} value={fac}>
+                  {fac}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -1290,7 +1363,8 @@ export const CalendarPage: React.FC = () => {
                 return (
                   <div
                     key={dayNum}
-                    className={`min-h-[130px] p-2 flex flex-col justify-between transition group bg-white hover:bg-[#F0E9FF]/30 ${
+                    onClick={() => handleDayClick(dateStr, dayNum, dayEvents)}
+                    className={`min-h-[130px] p-2 flex flex-col justify-between transition group bg-white hover:bg-[#F0E9FF]/40 cursor-pointer hover:shadow-xs hover:ring-2 hover:ring-[#8961D8]/40 ${
                       isToday ? 'bg-[#FBE5EF]/40' : ''
                     }`}
                   >
@@ -1316,7 +1390,10 @@ export const CalendarPage: React.FC = () => {
                       {dayEvents.map(evt => (
                         <div
                           key={evt.id}
-                          onClick={() => setSelectedEvent(evt)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedEvent(evt);
+                          }}
                           className="p-1.5 rounded-lg border text-[11px] font-semibold cursor-pointer truncate transition hover:scale-[1.02] shadow-xs bg-[#F0E9FF] border-[#BCA0F5]/50 text-[#8961D8]"
                         >
                           <div className="flex items-center space-x-1 truncate">
@@ -1330,8 +1407,9 @@ export const CalendarPage: React.FC = () => {
                       ))}
                     </div>
 
-                    <div className="text-[9px] text-[#71667D] opacity-0 group-hover:opacity-100 transition">
-                      Click to inspect
+                    <div className="text-[9px] text-[#8961D8] font-bold opacity-0 group-hover:opacity-100 transition flex items-center gap-1">
+                      <Eye className="w-3 h-3" />
+                      <span>Click to view day</span>
                     </div>
                   </div>
                 );
@@ -1437,7 +1515,128 @@ export const CalendarPage: React.FC = () => {
       )}
 
       {/* ======================================================== */}
-      {/* 5. MODAL: DETAILED PRACTICAL CLASS / EVENT INSPECTOR */}
+      {/* 5. MODAL: DAY INSPECTION MODAL (CLICKING ON ANY DAY) */}
+      {/* ======================================================== */}
+      {selectedDayDetail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white border border-[#E9DDF1] rounded-3xl shadow-2xl w-full max-w-xl max-h-[85vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="p-5 bg-gradient-to-r from-[#BCA0F5] to-[#8961D8] text-white flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <CalendarIcon className="w-5 h-5" />
+                  <h3 className="font-heading font-black text-xl text-white">
+                    {selectedDayDetail.dayName}, {monthNames[month]} {selectedDayDetail.dayNum}, {year}
+                  </h3>
+                </div>
+                <p className="text-xs text-white/80 font-semibold mt-1">
+                  {isStudent
+                    ? `Showing your allotted laboratory sessions for this date`
+                    : isFaculty && facultyOnlyMode
+                    ? `Showing classes you teach on this date`
+                    : `Showing all scheduled classes and bookings`}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedDayDetail(null)}
+                className="p-1.5 rounded-xl bg-white/20 hover:bg-white/30 text-white transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content List */}
+            <div className="p-5 overflow-y-auto space-y-3 flex-1 no-scrollbar">
+              {selectedDayDetail.events.length === 0 ? (
+                <div className="py-12 text-center space-y-2">
+                  <div className="w-12 h-12 rounded-2xl bg-[#FFF8F2] text-[#8961D8] flex items-center justify-center mx-auto mb-2 border border-[#E9DDF1]">
+                    <CalendarIcon className="w-6 h-6" />
+                  </div>
+                  <h4 className="font-heading font-black text-sm text-[#332B40]">
+                    No Classes Scheduled on {selectedDayDetail.dayName}
+                  </h4>
+                  <p className="text-xs text-[#71667D] max-w-md mx-auto">
+                    {isStudent
+                      ? `There are no practical sessions scheduled in your allotted laboratories on ${selectedDayDetail.dayName}.`
+                      : isFaculty && facultyOnlyMode
+                      ? `You are not scheduled to conduct any classes on ${selectedDayDetail.dayName}.`
+                      : `No departmental sessions or reservations are scheduled for this date.`}
+                  </p>
+                </div>
+              ) : (
+                selectedDayDetail.events.map(evt => (
+                  <div
+                    key={evt.id}
+                    onClick={() => {
+                      setSelectedDayDetail(null);
+                      setSelectedEvent(evt);
+                    }}
+                    className="p-4 rounded-2xl border border-[#E9DDF1] bg-[#FFF8F2]/40 hover:bg-[#F0E9FF]/50 transition cursor-pointer space-y-2 group hover:shadow-xs"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded-lg bg-[#8961D8] text-white text-[11px] font-mono font-black">
+                          {evt.labCode || 'LAB'}
+                        </span>
+                        <span className="font-heading font-black text-sm text-[#332B40]">
+                          {evt.title}
+                        </span>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200 shrink-0">
+                        {evt.status || 'SCHEDULED'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-[#71667D]">
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-[#8961D8]" />
+                        <span className="font-bold text-[#332B40]">{evt.timeStr}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Building2 className="w-3.5 h-3.5 text-[#8961D8]" />
+                        <span>{evt.labName} ({evt.roomNumber})</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5 text-[#8961D8]" />
+                        <span>Teacher: <strong className="text-[#332B40]">{evt.facultyName || evt.user}</strong></span>
+                      </div>
+                      {evt.studentCount && (
+                        <div className="flex items-center gap-1.5">
+                          <Users className="w-3.5 h-3.5 text-[#8961D8]" />
+                          <span>Batch: <strong className="text-[#332B40]">{evt.studentCount} Students</strong></span>
+                        </div>
+                      )}
+                    </div>
+
+                    {evt.resource && (
+                      <div className="text-[11px] text-[#71667D] pt-1.5 border-t border-[#E9DDF1]/60 flex items-center gap-1.5">
+                        <Cpu className="w-3.5 h-3.5 text-[#8961D8]" />
+                        <span>Equipment: {evt.resource}</span>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 bg-[#FFF8F2] border-t border-[#E9DDF1] flex items-center justify-between">
+              <span className="text-xs font-semibold text-[#71667D]">
+                {selectedDayDetail.events.length} session{selectedDayDetail.events.length !== 1 ? 's' : ''} on this date
+              </span>
+              <button
+                onClick={() => setSelectedDayDetail(null)}
+                className="px-4 py-2 rounded-xl bg-[#332B40] text-white text-xs font-bold hover:bg-[#8961D8] transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* 6. MODAL: DETAILED PRACTICAL CLASS / EVENT INSPECTOR */}
       {/* ======================================================== */}
       {selectedEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
