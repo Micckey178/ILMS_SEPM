@@ -516,7 +516,7 @@ export class DataService {
       minStock: Number(item.minStock) || 0,
       reorderQuantity: Number(item.reorderQuantity) || 10,
       unitCost: Number(item.unitCost) || 0,
-      currency: item.currency || 'USD',
+      currency: item.currency || 'INR',
       supplier: item.supplier,
       purchaseDate: item.purchaseDate || now.split('T')[0],
       warrantyExpiry: item.warrantyExpiry,

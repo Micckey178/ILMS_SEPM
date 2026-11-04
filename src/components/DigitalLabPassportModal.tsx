@@ -13,6 +13,7 @@ import {
   ArrowRightLeft
 } from 'lucide-react';
 import { EquipmentAsset } from '../types';
+import { formatINR } from '../utils/formatCurrency';
 
 interface DigitalLabPassportModalProps {
   isOpen: boolean;
@@ -32,7 +33,7 @@ export const DigitalLabPassportModal: React.FC<DigitalLabPassportModalProps> = (
       date: asset.purchaseDate || '2023-01-15',
       title: 'Acquisition & Commissioning',
       type: 'acquisition',
-      description: `Asset purchased for $${asset.purchaseCost || '4,500'} and assigned to laboratory storage location ${asset.location}. Initial calibration verified.`,
+      description: `Asset purchased for ${formatINR(Number(asset.purchaseCost) || 45000)} and assigned to laboratory storage location ${asset.location}. Initial calibration verified.`,
       icon: Tag,
       color: 'bg-blue-500'
     },

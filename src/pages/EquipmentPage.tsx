@@ -19,6 +19,7 @@ import { DataService } from '../services/dataService';
 import { EquipmentAsset, EquipmentStatus } from '../types';
 import { BookingModal } from '../components/BookingModal';
 import { QRLabelModal } from '../components/QRLabelModal';
+import { formatINR } from '../utils/formatCurrency';
 
 export const EquipmentPage: React.FC = () => {
   const { activeLab, currentUser, can } = useAuth();
@@ -48,7 +49,7 @@ export const EquipmentPage: React.FC = () => {
     serialNumber: '',
     status: 'AVAILABLE',
     location: 'Main Lab Bay',
-    purchaseCost: 5000,
+    purchaseCost: 45000,
     safetyInstructions: ''
   });
 
@@ -223,6 +224,12 @@ export const EquipmentPage: React.FC = () => {
                       <span>Location:</span>
                       <strong className="text-[#172033]">{asset.location}</strong>
                     </div>
+                    {asset.purchaseCost ? (
+                      <div className="flex justify-between">
+                        <span>Valuation:</span>
+                        <strong className="font-mono text-cyan-900">{formatINR(asset.purchaseCost)}</strong>
+                      </div>
+                    ) : null}
                     {asset.nextMaintenanceDate && (
                       <div className="flex justify-between">
                         <span>Next Service:</span>
@@ -386,7 +393,7 @@ export const EquipmentPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="text-xs font-bold uppercase tracking-wider text-[#5B6478] block mb-1">
-                    Purchase Cost ($)
+                    Purchase Cost (₹)
                   </label>
                   <input
                     type="number"

@@ -13,6 +13,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { DataService } from '../services/dataService';
 import { MaintenanceRecord, EquipmentAsset } from '../types';
+import { formatINR } from '../utils/formatCurrency';
 
 export const MaintenancePage: React.FC = () => {
   const { activeLab, currentUser, can } = useAuth();
@@ -145,7 +146,7 @@ export const MaintenancePage: React.FC = () => {
                 <th className="py-3.5 px-4">Service Type</th>
                 <th className="py-3.5 px-4">Scheduled Date</th>
                 <th className="py-3.5 px-4">Technician / Vendor</th>
-                <th className="py-3.5 px-4">Cost ($)</th>
+                <th className="py-3.5 px-4">Cost (₹)</th>
                 <th className="py-3.5 px-4">Status</th>
                 <th className="py-3.5 px-5 text-center">Actions</th>
               </tr>
@@ -182,7 +183,7 @@ export const MaintenancePage: React.FC = () => {
                         {rec.serviceProvider || rec.technicianName}
                       </td>
                       <td className="py-3.5 px-4 font-mono font-bold text-[#172033]">
-                        ${rec.cost.toFixed(2)}
+                        {formatINR(rec.cost)}
                       </td>
                       <td className="py-3.5 px-4">
                         {isOverdue ? (
@@ -208,7 +209,7 @@ export const MaintenancePage: React.FC = () => {
                             onClick={() => {
                               setSelectedRecordForSignoff(rec);
                               setWorkPerformed(rec.faultDescription ? `Resolved: ${rec.faultDescription}. Full recalibration performed.` : 'Preventive maintenance and cleaning completed.');
-                              setActualCost(rec.cost || 150);
+                              setActualCost(rec.cost || 1500);
                             }}
                             className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 mx-auto transition shadow-sm"
                           >
@@ -379,7 +380,7 @@ export const MaintenancePage: React.FC = () => {
 
               <div>
                 <label className="text-xs font-bold uppercase tracking-wider text-[#5B6478] block mb-1">
-                  Final Cost ($)
+                  Final Cost (₹)
                 </label>
                 <input
                   type="number"

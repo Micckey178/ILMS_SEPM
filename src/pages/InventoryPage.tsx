@@ -22,6 +22,7 @@ import { DataService } from '../services/dataService';
 import { UniversalInventoryItem, AssetType, UnitOfMeasurement } from '../types';
 import { StockMovementModal } from '../components/StockMovementModal';
 import { QRLabelModal } from '../components/QRLabelModal';
+import { formatINR } from '../utils/formatCurrency';
 
 export const InventoryPage: React.FC = () => {
   const { activeLab, currentUser, can } = useAuth();
@@ -53,7 +54,7 @@ export const InventoryPage: React.FC = () => {
     quantity: 10,
     unit: 'pcs',
     minStock: 2,
-    unitCost: 15.00,
+    unitCost: 150.00,
     manufacturer: '',
     supplier: '',
     notes: ''
@@ -188,7 +189,7 @@ export const InventoryPage: React.FC = () => {
                   quantity: 10,
                   unit: 'pcs',
                   minStock: 2,
-                  unitCost: 10.00
+                  unitCost: 100.00
                 });
                 setIsAddModalOpen(true);
               }}
@@ -274,7 +275,7 @@ export const InventoryPage: React.FC = () => {
                         <div className="font-bold text-sm text-[#172033]">{item.name}</div>
                         <div className="text-[11px] text-[#5B6478] mt-0.5">
                           {item.manufacturer && `${item.manufacturer} • `}
-                          ${item.unitCost.toFixed(2)} / {item.unit}
+                          {formatINR(item.unitCost)} / {item.unit}
                         </div>
                       </td>
                       <td className="py-3.5 px-4 font-mono text-[11px] font-bold text-cyan-800">
@@ -494,7 +495,7 @@ export const InventoryPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="text-xs font-bold uppercase tracking-wider text-[#5B6478] block mb-1">
-                    Unit Cost ($)
+                    Unit Cost (₹)
                   </label>
                   <input
                     type="number"
