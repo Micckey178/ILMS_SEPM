@@ -178,7 +178,14 @@ class LocalStoreManager {
   public setUsers(users: UserProfile[]) { this.set('users', users); }
 
   public getLabs(): Laboratory[] {
-    const labs = this.get('laboratories', INITIAL_LABORATORIES);
+    let labs = this.get('laboratories', INITIAL_LABORATORIES);
+    // Ensure all authentic laboratories exist in the collection
+    const existingIds = new Set((labs || []).map(l => l.id));
+    const missing = INITIAL_LABORATORIES.filter(l => !existingIds.has(l.id));
+    if (missing.length > 0) {
+      labs = [...(labs || []), ...missing];
+      this.set('laboratories', labs);
+    }
     const standardCodes: Record<string, string> = {
       'lab-atl-01': 'CS-01',
       'lab-atl-02': 'CS-02',
@@ -240,7 +247,16 @@ class LocalStoreManager {
   public getWorkstations(): ComputerWorkstation[] { return this.get('workstations', INITIAL_WORKSTATIONS); }
   public setWorkstations(ws: ComputerWorkstation[]) { this.set('workstations', ws); }
 
-  public getPracticalSessions(): PracticalSession[] { return this.get('practicalSessions', INITIAL_PRACTICAL_SESSIONS); }
+  public getPracticalSessions(): PracticalSession[] {
+    let sessions = this.get('practicalSessions', INITIAL_PRACTICAL_SESSIONS);
+    const existingIds = new Set((sessions || []).map(s => s.id));
+    const missing = INITIAL_PRACTICAL_SESSIONS.filter(s => !existingIds.has(s.id));
+    if (missing.length > 0) {
+      sessions = [...(sessions || []), ...missing];
+      this.set('practicalSessions', sessions);
+    }
+    return sessions;
+  }
   public setPracticalSessions(s: PracticalSession[]) { this.set('practicalSessions', s); }
 
   public getFaultTickets(): FaultTicket[] { return this.get('faultTickets', INITIAL_FAULT_TICKETS); }
@@ -336,17 +352,70 @@ export class DataService {
 
   // --- LABORATORIES ---
   static async getLaboratories(): Promise<Laboratory[]> {
+    let labs: Laboratory[] = [];
+    let firestoreIds = new Set<string>();
+
     if (isFirebaseConfigured() && db) {
       try {
         const snap = await getDocs(collection(db, 'laboratories'));
         if (!snap.empty) {
-          return snap.docs.map(d => ({ id: d.id, ...d.data() } as Laboratory));
+          labs = snap.docs.map(d => ({ id: d.id, ...d.data() } as Laboratory));
+          firestoreIds = new Set(labs.map(l => l.id));
         }
       } catch (err) {
         console.warn('Firestore fetch failed, using local store', err);
       }
     }
-    return localStore.getLabs();
+
+    // Always merge with localStore and INITIAL_LABORATORIES so ALL 11 CSE Department laboratories
+    // (CS-01 to CS-11) are unconditionally present, even if Firestore only had a single laboratory!
+    const localLabs = localStore.getLabs();
+    const existingIds = new Set(labs.map(l => l.id));
+
+    for (const l of localLabs) {
+      if (!existingIds.has(l.id)) {
+        labs.push(l);
+        existingIds.add(l.id);
+      }
+    }
+
+    for (const l of INITIAL_LABORATORIES) {
+      if (!existingIds.has(l.id)) {
+        labs.push(l);
+        existingIds.add(l.id);
+      }
+    }
+
+    const standardCodes: Record<string, string> = {
+      'lab-atl-01': 'CS-01',
+      'lab-atl-02': 'CS-02',
+      'lab-atl-03': 'CS-03',
+      'lab-sll-01': 'CS-04',
+      'lab-sll-02': 'CS-05',
+      'lab-bfl-01': 'CS-06',
+      'lab-bfl-02': 'CS-07',
+      'lab-bfl-03': 'CS-08',
+      'lab-vin-01': 'CS-09',
+      'lab-cbl-01': 'CS-10',
+      'lab-cbl-02': 'CS-11'
+    };
+
+    const standardized = labs.map(l => standardCodes[l.id] ? { ...l, code: standardCodes[l.id] } : l);
+    localStore.setLabs(standardized);
+
+    // Opportunistically sync missing department laboratories to Firestore in the background
+    const firestoreInstance = db;
+    if (isFirebaseConfigured() && firestoreInstance && firestoreIds.size > 0 && firestoreIds.size < INITIAL_LABORATORIES.length) {
+      INITIAL_LABORATORIES.forEach(async (initLab) => {
+        if (!firestoreIds.has(initLab.id)) {
+          try {
+            await setDoc(doc(firestoreInstance, 'laboratories', initLab.id), sanitizeForFirestore(initLab), { merge: true });
+          } catch {}
+        }
+      });
+    }
+
+    return standardized;
   }
 
   static async createLaboratory(lab: Laboratory, currentUser: UserProfile): Promise<Laboratory> {

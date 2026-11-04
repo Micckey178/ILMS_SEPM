@@ -101,15 +101,8 @@ export const Navbar: React.FC<NavbarProps> = ({
     onRefreshNotifications();
   };
 
-  // Filter laboratories by authorization & search query
-  const authorizedLabs = laboratories.filter(lab => {
-    if (currentUser.role === 'admin') return true;
-    if (currentUser.assignedLabs && currentUser.assignedLabs.length > 0) {
-      return currentUser.assignedLabs.includes(lab.id);
-    }
-    // Default fallback: allow assigned or all if none specified
-    return true;
-  });
+  // All 11 CSE Department Laboratories
+  const authorizedLabs = laboratories.filter(lab => lab.id !== 'lab-chem-01');
 
   const searchedLabs = authorizedLabs.filter(lab =>
     lab.name.toLowerCase().includes(labSearchQuery.toLowerCase()) ||
@@ -483,6 +476,60 @@ export const Navbar: React.FC<NavbarProps> = ({
                       <span>Help and Support (Tour)</span>
                     </button>
                   )}
+                </div>
+
+                {/* Quick Profile Switcher */}
+                <div className="border-t border-border dark:border-slate-800 mt-1 pt-2 px-3 pb-1">
+                  <p className="text-[10px] font-bold text-[#71667D] uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                    <span>Quick Switch Account:</span>
+                    <span className="text-[9px] text-[#8961D8]">Instant Preview</span>
+                  </p>
+                  <div className="space-y-1">
+                    <button
+                      onClick={() => {
+                        switchUser('usr-admin-01');
+                        setShowUserMenu(false);
+                      }}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center justify-between ${
+                        currentUser.role === 'admin'
+                          ? 'bg-purple-100 text-purple-900 font-black'
+                          : 'hover:bg-slate-100 text-slate-700'
+                      }`}
+                    >
+                      <span className="truncate">🏛️ Mehekha C (Admin)</span>
+                      <span className="text-[10px] font-mono text-purple-700 shrink-0 font-black">All Labs</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        switchUser('usr-hod-01');
+                        setShowUserMenu(false);
+                      }}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center justify-between ${
+                        currentUser.displayName?.includes('Roopa')
+                          ? 'bg-purple-100 text-purple-900 font-black'
+                          : 'hover:bg-slate-100 text-slate-700'
+                      }`}
+                    >
+                      <span className="truncate">👩‍🏫 Dr. Roopa M J (HOD)</span>
+                      <span className="text-[10px] font-mono text-purple-700 shrink-0">HOD</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        switchUser('usr-stud-01');
+                        setShowUserMenu(false);
+                      }}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center justify-between ${
+                        currentUser.role === 'student'
+                          ? 'bg-purple-100 text-purple-900 font-black'
+                          : 'hover:bg-slate-100 text-slate-700'
+                      }`}
+                    >
+                      <span className="truncate">🎓 Kavya N (Student)</span>
+                      <span className="text-[10px] font-mono text-emerald-700 shrink-0">Student</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="border-t border-border dark:border-slate-800 mt-1 pt-1.5 px-2">

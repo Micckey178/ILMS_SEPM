@@ -159,19 +159,10 @@ export const CalendarPage: React.FC = () => {
   }, [isFaculty, sessions, laboratories, currentUser]);
 
   // Laboratories to display in the selector strip & filter dropdown
-  // Enforces user requirement:
-  // - For Students: ONLY allotted laboratories appear (not all college labs)
-  // - For Faculty: ONLY laboratories where they conduct classes appear
-  // - For Admin: All 11 laboratories appear
+  // Always includes all 11 department laboratories (CS-01 to CS-11)
   const visibleLabs = useMemo(() => {
-    if (isStudent) {
-      return studentAllottedLabs.filter(l => l.id !== 'lab-chem-01');
-    }
-    if (isFaculty && facultyOnlyMode) {
-      return facultyTeachingLabs.filter(l => l.id !== 'lab-chem-01');
-    }
     return laboratories.filter(l => l.id !== 'lab-chem-01');
-  }, [isStudent, isFaculty, facultyOnlyMode, studentAllottedLabs, facultyTeachingLabs, laboratories]);
+  }, [laboratories]);
 
   // Selected laboratory object
   const currentLab = useMemo(() => {

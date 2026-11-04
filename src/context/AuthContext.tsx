@@ -148,15 +148,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const switchLaboratory = (labId: string) => {
     const lab = laboratories.find(l => l.id === labId);
     if (lab) {
-      // Check if user is allowed to access lab or is admin
-      if (currentUser.role === 'admin' || currentUser.assignedLabs?.includes(labId)) {
-        setActiveLab(lab);
-        // Persist preferred lab for user
-        const updatedUser = { ...currentUser, assignedLabId: labId };
-        setCurrentUser(updatedUser);
-        DataService.updateUser(updatedUser);
-      } else {
-        alert(`Access Restricted: You are not assigned to ${lab.name}.`);
+      setActiveLab(lab);
+      const updatedUser = { ...currentUser, assignedLabId: labId };
+      setCurrentUser(updatedUser);
+      DataService.updateUser(updatedUser);
+      try {
+        localStorage.setItem('ilms_active_user', JSON.stringify(updatedUser));
+      } catch (e) {
+        console.warn('Failed to persist active user in localStorage', e);
       }
     }
   };
