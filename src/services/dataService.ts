@@ -20,7 +20,8 @@ import {
   AttendanceRecord,
   AttendanceStatus,
   CertifiedVendor,
-  VendorCatalogProduct
+  VendorCatalogProduct,
+  TechnicianWorkLog
 } from '../types';
 import {
   INITIAL_USERS,
@@ -39,7 +40,8 @@ import {
   INITIAL_FAULT_TICKETS,
   INITIAL_ATTENDANCE,
   INITIAL_VENDORS,
-  INITIAL_VENDOR_PRODUCTS
+  INITIAL_VENDOR_PRODUCTS,
+  INITIAL_TECHNICIAN_WORKS
 } from '../lib/firebase/seedData';
 import { db, isFirebaseConfigured } from '../lib/firebase/firebase';
 import {
@@ -111,7 +113,7 @@ const sanitizeForFirestore = <T>(obj: T): T => {
   }
 };
 
-const STORAGE_KEY_PREFIX = 'ILMS_STORE_V6_';
+const STORAGE_KEY_PREFIX = 'ILMS_STORE_V7_';
 
 class LocalStoreManager {
   private memoryStore: Record<string, string> = {};
@@ -269,6 +271,9 @@ class LocalStoreManager {
 
   public getVendorProducts(): VendorCatalogProduct[] { return this.get('vendorProducts', INITIAL_VENDOR_PRODUCTS); }
   public setVendorProducts(vp: VendorCatalogProduct[]) { this.set('vendorProducts', vp); }
+
+  public getTechnicianWorks(): TechnicianWorkLog[] { return this.get('technicianWorks', INITIAL_TECHNICIAN_WORKS); }
+  public setTechnicianWorks(tw: TechnicianWorkLog[]) { this.set('technicianWorks', tw); }
 }
 
 export const localStore = new LocalStoreManager();
@@ -1016,7 +1021,43 @@ export class DataService {
   // --- MAINTENANCE & CALIBRATION ---
   static async getMaintenanceRecords(labId?: string): Promise<MaintenanceRecord[]> {
     const list = localStore.getMaintenance();
-    return labId ? list.filter(m => m.laboratoryId === labId) : list;
+    if (!labId || labId === 'ALL') return list;
+    return list.filter(m => m.laboratoryId === labId);
+  }
+
+  // --- TECHNICIAN WORK ORDERS & COLLEGE SERVICES ---
+  static async getTechnicianWorkLogs(labId?: string): Promise<TechnicianWorkLog[]> {
+    const list = localStore.getTechnicianWorks();
+    if (!labId || labId === 'ALL') return list;
+    return list.filter(w => w.laboratoryId === labId);
+  }
+
+  static async createTechnicianWorkLog(
+    log: Partial<TechnicianWorkLog>,
+    currentUser: UserProfile
+  ): Promise<TechnicianWorkLog> {
+    const newLog: TechnicianWorkLog = {
+      id: `wo-${Date.now()}`,
+      workOrderNumber: `WO-SJBIT-${Date.now().toString().slice(-6)}`,
+      laboratoryId: log.laboratoryId || currentUser.assignedLabId || 'lab-atl-01',
+      laboratoryName: log.laboratoryName || 'Academic Laboratory',
+      roomCode: log.roomCode || 'CS-01',
+      title: log.title || 'Technical Work Order',
+      category: log.category || 'WORKSTATION_DEPLOYMENT',
+      equipmentName: log.equipmentName || 'Laboratory Systems',
+      workDescription: log.workDescription || 'Maintenance and calibration verified.',
+      date: log.date || new Date().toISOString().split('T')[0],
+      timeSpentHours: Number(log.timeSpentHours) || 2,
+      technicianId: currentUser.id,
+      technicianName: currentUser.displayName,
+      verifiedBy: log.verifiedBy || 'Dr. Roopa M J (HOD, CSE)',
+      status: log.status || 'COMPLETED',
+      costRupees: Number(log.costRupees) || 0
+    };
+    const list = localStore.getTechnicianWorks();
+    list.unshift(newLog);
+    localStore.setTechnicianWorks(list);
+    return newLog;
   }
 
   static async createMaintenanceRecord(record: Partial<MaintenanceRecord>, currentUser: UserProfile): Promise<MaintenanceRecord> {

@@ -139,12 +139,12 @@ export const FacultyLabBookingModal: React.FC<FacultyLabBookingModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in overflow-y-auto">
-      <div className="bg-white border border-[#E4E7F0] rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden my-8 flex flex-col text-[#172033]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/75 backdrop-blur-md animate-in fade-in overflow-y-auto">
+      <div className="bg-white border border-[#E4E7F0] rounded-3xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col text-[#172033] my-auto overflow-hidden">
         {/* Header */}
-        <div className="p-5 sm:p-6 bg-white text-[#172033] flex items-center justify-between border-b border-[#E4E7F0]">
+        <div className="p-4 sm:p-6 bg-white text-[#172033] flex items-center justify-between border-b border-[#E4E7F0] shrink-0">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-2xl bg-cyan-50 border border-cyan-200 flex items-center justify-center text-cyan-800">
+            <div className="w-10 h-10 rounded-2xl bg-cyan-50 border border-cyan-200 flex items-center justify-center text-cyan-800 shrink-0">
               <Calendar className="w-5 h-5" />
             </div>
             <div>
@@ -164,8 +164,8 @@ export const FacultyLabBookingModal: React.FC<FacultyLabBookingModalProps> = ({
           </button>
         </div>
 
-        {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
+        {/* Form Body - Scrollable */}
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 text-xs overflow-y-auto flex-1 min-h-0">
           {errorMsg && (
             <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start space-x-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />

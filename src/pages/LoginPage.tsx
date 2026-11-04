@@ -558,8 +558,7 @@ export const LoginPage: React.FC = () => {
                 >
                   <option value="student">Student / Scholar (Default)</option>
                   <option value="faculty">Faculty / Lead Researcher</option>
-                  <option value="technician">Laboratory Technician</option>
-                  <option value="labManager">Laboratory Manager</option>
+                  <option value="technician">Laboratory Manager & Senior Technician</option>
                 </select>
                 <p className="text-[11px] text-[#5B6478] mt-1">
                   Security notice: Elevated faculty and manager roles require institutional Administrator approval before activation.

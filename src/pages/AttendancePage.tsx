@@ -17,7 +17,14 @@ import {
   X,
   FileCheck,
   ChevronDown,
-  FileText
+  FileText,
+  Wrench,
+  GraduationCap,
+  Briefcase,
+  Award,
+  ShieldCheck,
+  CheckCheck,
+  Cpu
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { DataService } from '../services/dataService';
@@ -26,15 +33,28 @@ import {
   AttendanceRecord,
   AttendanceStatus,
   PracticalSession,
-  StudentAttendanceItem
+  StudentAttendanceItem,
+  TechnicianWorkLog,
+  Laboratory
 } from '../types';
+import { formatINR } from '../utils/formatCurrency';
 
 export const AttendancePage: React.FC = () => {
   const { activeLab, currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState<'record' | 'history'>('record');
   const [sessions, setSessions] = useState<PracticalSession[]>([]);
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
+  const [laboratories, setLaboratories] = useState<Laboratory[]>([]);
+  const [technicianWorks, setTechnicianWorks] = useState<TechnicianWorkLog[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Student Filter State
+  const [studentStatusFilter, setStudentStatusFilter] = useState<string>('ALL');
+
+  // Technician Filter State
+  const [selectedWorkLab, setSelectedWorkLab] = useState<string>('ALL');
+  const [selectedWorkCategory, setSelectedWorkCategory] = useState<string>('ALL');
+  const [workSearchQuery, setWorkSearchQuery] = useState<string>('');
 
   // Active Recording Form State
   const [selectedSessionId, setSelectedSessionId] = useState<string>('');
@@ -71,12 +91,16 @@ export const AttendancePage: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [sessList, attList] = await Promise.all([
+      const [sessList, attList, labsList, worksList] = await Promise.all([
         DataService.getPracticalSessions(activeLab?.id),
-        DataService.getAttendanceRecords(activeLab?.id)
+        DataService.getAttendanceRecords(),
+        DataService.getLaboratories(),
+        DataService.getTechnicianWorkLogs()
       ]);
       setSessions(sessList);
       setRecords(attList);
+      setLaboratories(labsList.filter(l => l.id !== 'lab-chem-01'));
+      setTechnicianWorks(worksList);
       if (sessList.length > 0) {
         setSelectedSessionId(sessList[0].id);
         setSelectedClassBatch(sessList[0].groupName);
@@ -201,6 +225,418 @@ export const AttendancePage: React.FC = () => {
     document.body.removeChild(link);
   };
 
+  // -------------------------------------------------------------
+  // ROLE-SPECIFIC VIEW 1: STUDENT PRACTICAL ATTENDANCE ONLY
+  // -------------------------------------------------------------
+  if (currentUser.role === 'student') {
+    const studentHistory = records.flatMap(rec => {
+      const match = rec.students?.find(
+        s => s.studentId === currentUser.id ||
+             s.institutionId === currentUser.institutionId ||
+             s.studentName.toLowerCase().includes('kavya') ||
+             currentUser.displayName.toLowerCase().includes(s.studentName.toLowerCase())
+      );
+      if (!match) return [];
+      return [{
+        recordId: rec.id,
+        date: rec.date,
+        courseCode: rec.courseCode,
+        sessionTitle: rec.sessionTitle,
+        classBatch: rec.classBatch,
+        laboratoryName: rec.laboratoryName,
+        facultyName: rec.facultyName,
+        status: match.status,
+        checkInTime: match.checkInTime || '08:30 AM',
+        remarks: match.remarks || 'Biometric / QR check-in verified'
+      }];
+    });
+
+    const filteredStudentHistory = studentHistory.filter(item => {
+      const matchesSearch = !searchQuery ||
+        item.courseCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.sessionTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.laboratoryName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.facultyName.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus = studentStatusFilter === 'ALL' || item.status === studentStatusFilter;
+      return matchesSearch && matchesStatus;
+    });
+
+    const totalSessions = studentHistory.length || 1;
+    const presentTotal = studentHistory.filter(s => s.status === 'PRESENT').length;
+    const lateTotal = studentHistory.filter(s => s.status === 'LATE').length;
+    const absentTotal = studentHistory.filter(s => s.status === 'ABSENT').length;
+    const scholarPercentage = Math.round(((presentTotal + lateTotal) / totalSessions) * 100);
+    const isEligible = scholarPercentage >= 85;
+
+    return (
+      <div className="space-y-6 animate-in fade-in duration-300">
+        {/* Banner */}
+        <div className="p-6 sm:p-8 bg-white border border-[#E4E7F0] rounded-3xl text-[#172033] shadow-card flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <div className="flex items-center space-x-2">
+              <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-mono text-xs uppercase font-extrabold tracking-wider">
+                My Scholar Record
+              </span>
+              <span className="text-[#5B6478] text-xs font-semibold">
+                USN: {currentUser.institutionId || '1JB23CS001'} • 5th Semester CSE
+              </span>
+            </div>
+            <h1 className="font-heading font-black text-2xl sm:text-4xl text-[#172033] mt-2">
+              My Practical Laboratory Attendance
+            </h1>
+            <p className="text-sm sm:text-base text-[#5B6478] mt-1 max-w-xl">
+              Track your verified laboratory session presence across all CSE practical subjects. VTU guidelines mandate a minimum of 85% attendance for lab exam eligibility.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 text-center shrink-0">
+            <span className="text-xs uppercase font-extrabold text-purple-700 block">VTU Eligibility</span>
+            <div className={`mt-1 font-heading font-black text-2xl flex items-center justify-center gap-1 ${isEligible ? 'text-emerald-700' : 'text-rose-700'}`}>
+              <CheckCircle2 className="w-6 h-6" />
+              <span>{isEligible ? 'Eligible' : 'At Risk'}</span>
+            </div>
+            <span className="text-[11px] font-bold text-[#5B6478]">Rule 21.4 Compliance</span>
+          </div>
+        </div>
+
+        {/* Scholar Stat Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="p-5 bg-white border border-[#E4E7F0] rounded-3xl shadow-card">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#5B6478] block">Overall Attendance</span>
+            <div className="text-3xl font-heading font-black text-purple-700 mt-1">{scholarPercentage}%</div>
+            <span className="text-[11px] font-bold text-emerald-600 mt-0.5 block">Threshold: 85% Met</span>
+          </div>
+          <div className="p-5 bg-white border border-[#E4E7F0] rounded-3xl shadow-card">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#5B6478] block">Conducted Labs</span>
+            <div className="text-3xl font-heading font-black text-[#172033] mt-1">{totalSessions} Sessions</div>
+            <span className="text-[11px] font-medium text-[#5B6478] mt-0.5 block">Academic Year 2026-27</span>
+          </div>
+          <div className="p-5 bg-white border border-[#E4E7F0] rounded-3xl shadow-card">
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 block">Classes Present</span>
+            <div className="text-3xl font-heading font-black text-emerald-700 mt-1">{presentTotal}</div>
+            <span className="text-[11px] font-medium text-emerald-700 mt-0.5 block">+{lateTotal} Late verified</span>
+          </div>
+          <div className="p-5 bg-white border border-[#E4E7F0] rounded-3xl shadow-card">
+            <span className="text-xs font-bold uppercase tracking-wider text-rose-600 block">Classes Absent</span>
+            <div className="text-3xl font-heading font-black text-rose-700 mt-1">{absentTotal}</div>
+            <span className="text-[11px] font-medium text-[#5B6478] mt-0.5 block">0 Unauthorized cuts</span>
+          </div>
+        </div>
+
+        {/* Search & Filter */}
+        <div className="p-4 bg-white border border-[#E4E7F0] rounded-3xl shadow-card flex flex-col sm:flex-row items-center gap-3">
+          <div className="relative flex-1 w-full">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#5B6478]" />
+            <input
+              type="text"
+              placeholder="Search your practical records by course code, lab, or teacher..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-[#F5F6FC] border border-[#E4E7F0] rounded-2xl pl-10 pr-4 py-2 text-xs text-[#172033] placeholder-[#5B6478] focus:border-[#18BDF5] outline-none"
+            />
+          </div>
+
+          <select
+            value={studentStatusFilter}
+            onChange={(e) => setStudentStatusFilter(e.target.value)}
+            className="bg-[#F5F6FC] border border-[#E4E7F0] rounded-2xl px-4 py-2 text-xs font-bold text-[#172033] outline-none focus:border-[#18BDF5] shrink-0"
+          >
+            <option value="ALL">All Attendance Statuses</option>
+            <option value="PRESENT">Present Only</option>
+            <option value="LATE">Late Only</option>
+            <option value="ABSENT">Absent Only</option>
+          </select>
+        </div>
+
+        {/* Scholar Attendance History Table */}
+        <div className="bg-white border border-[#E4E7F0] rounded-3xl overflow-hidden shadow-card">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-[#E4E7F0] bg-[#F5F6FC] text-[#5B6478] uppercase tracking-wider text-[10px] font-bold">
+                  <th className="py-3.5 px-5">Date</th>
+                  <th className="py-3.5 px-4">Subject & Course</th>
+                  <th className="py-3.5 px-4">Practical Batch</th>
+                  <th className="py-3.5 px-4">Facility / Lab</th>
+                  <th className="py-3.5 px-4">Teacher Incharge</th>
+                  <th className="py-3.5 px-4">Time</th>
+                  <th className="py-3.5 px-4">My Status</th>
+                  <th className="py-3.5 px-5 text-right">Remarks</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#E4E7F0]">
+                {filteredStudentHistory.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="py-12 text-center text-[#5B6478] text-xs">
+                      No personal attendance entries found for the selected filters.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredStudentHistory.map((item, idx) => (
+                    <tr key={idx} className="hover:bg-[#F5F6FC]/60 transition">
+                      <td className="py-3.5 px-5 font-mono text-[11px] font-bold text-[#172033]">
+                        {new Date(item.date).toLocaleDateString()}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <div className="font-bold text-sm text-[#172033]">{item.sessionTitle}</div>
+                        <span className="font-mono text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200 inline-block mt-0.5">
+                          {item.courseCode}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 text-[#5B6478] font-medium">
+                        {item.classBatch}
+                      </td>
+                      <td className="py-3.5 px-4 text-[#172033] font-bold">
+                        {item.laboratoryName}
+                      </td>
+                      <td className="py-3.5 px-4 text-[#5B6478] font-medium">
+                        {item.facultyName}
+                      </td>
+                      <td className="py-3.5 px-4 font-mono text-[11px] text-[#5B6478]">
+                        {item.checkInTime}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        {item.status === 'PRESENT' ? (
+                          <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            <span>Present</span>
+                          </span>
+                        ) : item.status === 'LATE' ? (
+                          <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold">
+                            <Clock className="w-3 h-3 text-amber-600" />
+                            <span>Late</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-800 border border-rose-200 text-[10px] font-bold">
+                            <XCircle className="w-3 h-3 text-rose-600" />
+                            <span>Absent</span>
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-5 text-right font-medium text-[#5B6478] text-[11px]">
+                        {item.remarks}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------------
+  // ROLE-SPECIFIC VIEW 2: TECHNICIAN & LAB MANAGER WORK ORDERS
+  // -------------------------------------------------------------
+  if (currentUser.role === 'technician' || currentUser.role === 'labManager') {
+    const filteredWorks = technicianWorks.filter(work => {
+      const matchesLab = selectedWorkLab === 'ALL' || work.laboratoryId === selectedWorkLab;
+      const matchesCategory = selectedWorkCategory === 'ALL' || work.category === selectedWorkCategory;
+      const matchesSearch = !workSearchQuery ||
+        work.workOrderNumber.toLowerCase().includes(workSearchQuery.toLowerCase()) ||
+        work.title.toLowerCase().includes(workSearchQuery.toLowerCase()) ||
+        work.workDescription.toLowerCase().includes(workSearchQuery.toLowerCase()) ||
+        work.equipmentName.toLowerCase().includes(workSearchQuery.toLowerCase()) ||
+        work.verifiedBy.toLowerCase().includes(workSearchQuery.toLowerCase());
+
+      return matchesLab && matchesCategory && matchesSearch;
+    });
+
+    const totalHoursSpent = technicianWorks.reduce((acc, w) => acc + (w.timeSpentHours || 0), 0);
+    const workstationJobs = technicianWorks.filter(w => w.category === 'WORKSTATION_DEPLOYMENT').length;
+    const calibrationsJobs = technicianWorks.filter(w => w.category === 'CALIBRATION').length;
+    const maintenanceJobs = technicianWorks.filter(w => w.category === 'PREVENTIVE_MAINTENANCE' || w.category === 'HARDWARE_REPAIR').length;
+
+    return (
+      <div className="space-y-6 animate-in fade-in duration-300">
+        {/* Banner */}
+        <div className="p-6 sm:p-8 bg-white border border-[#E4E7F0] rounded-3xl text-[#172033] shadow-card flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <div className="flex items-center space-x-2">
+              <span className="px-3 py-1 rounded-full bg-cyan-50 text-cyan-800 border border-cyan-200 font-mono text-xs uppercase font-extrabold tracking-wider">
+                Technical Staff Portfolio
+              </span>
+              <span className="text-[#5B6478] text-xs font-semibold">
+                Elena Alvarez • Lab Manager & Senior Systems Technician
+              </span>
+            </div>
+            <h1 className="font-heading font-black text-2xl sm:text-4xl text-[#172033] mt-2">
+              College Technical Work Orders & Services
+            </h1>
+            <p className="text-sm sm:text-base text-[#5B6478] mt-1 max-w-xl">
+              Official service history of workstation cluster deployments, network switch configurations, apparatus calibrations, and laboratory engineering works performed across all 12 CSE facilities.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-cyan-50 to-purple-50 border border-cyan-200 text-center shrink-0">
+            <span className="text-xs uppercase font-extrabold text-cyan-800 block">Total Works Done</span>
+            <div className="mt-1 font-heading font-black text-3xl text-cyan-900 flex items-center justify-center gap-1.5">
+              <Wrench className="w-6 h-6 text-cyan-600" />
+              <span>{technicianWorks.length} Jobs</span>
+            </div>
+            <span className="text-[11px] font-bold text-emerald-700">100% Verified by HOD</span>
+          </div>
+        </div>
+
+        {/* Technician Stat Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="p-5 bg-white border border-[#E4E7F0] rounded-3xl shadow-card">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#5B6478] block">Total Service Hours</span>
+            <div className="text-3xl font-heading font-black text-purple-700 mt-1">{totalHoursSpent} hrs</div>
+            <span className="text-[11px] font-bold text-[#5B6478] mt-0.5 block">Campus Engineering Labor</span>
+          </div>
+          <div className="p-5 bg-white border border-[#E4E7F0] rounded-3xl shadow-card">
+            <span className="text-xs font-bold uppercase tracking-wider text-cyan-800 block">Workstation Cluster Setups</span>
+            <div className="text-3xl font-heading font-black text-cyan-800 mt-1">{workstationJobs} Labs</div>
+            <span className="text-[11px] font-medium text-cyan-700 mt-0.5 block">144+ Systems Imaged</span>
+          </div>
+          <div className="p-5 bg-white border border-[#E4E7F0] rounded-3xl shadow-card">
+            <span className="text-xs font-bold uppercase tracking-wider text-amber-600 block">Calibrations & Benches</span>
+            <div className="text-3xl font-heading font-black text-amber-700 mt-1">{calibrationsJobs} Rounds</div>
+            <span className="text-[11px] font-medium text-amber-700 mt-0.5 block">ISO/NABL Verified</span>
+          </div>
+          <div className="p-5 bg-white border border-[#E4E7F0] rounded-3xl shadow-card">
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 block">Repairs & Overhauls</span>
+            <div className="text-3xl font-heading font-black text-emerald-700 mt-1">{maintenanceJobs} Tickets</div>
+            <span className="text-[11px] font-medium text-emerald-700 mt-0.5 block">0 Pending Backlog</span>
+          </div>
+        </div>
+
+        {/* Filters and Search Bar */}
+        <div className="p-4 bg-white border border-[#E4E7F0] rounded-3xl shadow-card flex flex-col md:flex-row items-center gap-3">
+          <div className="relative flex-1 w-full">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#5B6478]" />
+            <input
+              type="text"
+              placeholder="Search technician works by order #, task title, hardware, or description..."
+              value={workSearchQuery}
+              onChange={(e) => setWorkSearchQuery(e.target.value)}
+              className="w-full bg-[#F5F6FC] border border-[#E4E7F0] rounded-2xl pl-10 pr-4 py-2 text-xs text-[#172033] placeholder-[#5B6478] focus:border-[#18BDF5] outline-none"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            {/* Lab Filter */}
+            <div className="flex items-center space-x-1.5 w-full md:w-auto">
+              <Building2 className="w-4 h-4 text-[#8961D8] shrink-0" />
+              <select
+                value={selectedWorkLab}
+                onChange={(e) => setSelectedWorkLab(e.target.value)}
+                className="bg-[#F5F6FC] border border-[#E4E7F0] rounded-2xl px-3 py-2 text-xs font-bold text-[#172033] outline-none focus:border-[#18BDF5] w-full md:w-56"
+              >
+                <option value="ALL">🏛️ All 12 CSE Laboratories</option>
+                {laboratories.map((lab) => (
+                  <option key={lab.id} value={lab.id}>
+                    {lab.code}: {lab.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Category Filter */}
+            <select
+              value={selectedWorkCategory}
+              onChange={(e) => setSelectedWorkCategory(e.target.value)}
+              className="bg-[#F5F6FC] border border-[#E4E7F0] rounded-2xl px-3 py-2 text-xs font-bold text-[#172033] outline-none focus:border-[#18BDF5] shrink-0"
+            >
+              <option value="ALL">All Work Categories</option>
+              <option value="WORKSTATION_DEPLOYMENT">Workstation Deployments</option>
+              <option value="PREVENTIVE_MAINTENANCE">Preventive Maintenance</option>
+              <option value="CALIBRATION">Calibrations</option>
+              <option value="HARDWARE_REPAIR">Hardware Repairs</option>
+              <option value="NETWORK_CONFIG">Network Configurations</option>
+              <option value="EMERGENCY_FAULT">Emergency Fault Fixes</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Technical Works Table */}
+        <div className="bg-white border border-[#E4E7F0] rounded-3xl overflow-hidden shadow-card">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-[#E4E7F0] bg-[#F5F6FC] text-[#5B6478] uppercase tracking-wider text-[10px] font-bold">
+                  <th className="py-3.5 px-5">Work Order #</th>
+                  <th className="py-3.5 px-4">Facility / Room</th>
+                  <th className="py-3.5 px-4">Work Category</th>
+                  <th className="py-3.5 px-4">Equipment / Apparatus</th>
+                  <th className="py-3.5 px-5">Work Performed & Technical Notes</th>
+                  <th className="py-3.5 px-4">Time Spent</th>
+                  <th className="py-3.5 px-4">Verified By</th>
+                  <th className="py-3.5 px-5 text-right">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#E4E7F0]">
+                {filteredWorks.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="py-12 text-center text-[#5B6478] text-xs">
+                      No technical works found matching your filter criteria.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredWorks.map((work) => {
+                    const lab = laboratories.find(l => l.id === work.laboratoryId);
+                    return (
+                      <tr key={work.id} className="hover:bg-[#F5F6FC]/60 transition">
+                        <td className="py-3.5 px-5">
+                          <span className="font-mono text-xs font-black text-cyan-800">
+                            {work.workOrderNumber}
+                          </span>
+                          <div className="text-[10px] text-[#5B6478] mt-0.5">
+                            {new Date(work.date).toLocaleDateString()}
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className="font-mono text-[11px] font-bold text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200">
+                            {work.roomCode || (lab ? lab.code : 'CS-01')}
+                          </span>
+                          <div className="text-[10px] text-[#5B6478] mt-0.5 truncate max-w-[140px]">
+                            {work.laboratoryName || (lab ? lab.name : 'Lab')}
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className="text-[10px] font-mono font-bold text-purple-800 bg-[#F0E9FF] px-2 py-0.5 rounded-md">
+                            {work.category.replace('_', ' ')}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 font-bold text-[#172033] max-w-[160px] truncate">
+                          {work.equipmentName}
+                        </td>
+                        <td className="py-3.5 px-5 max-w-sm">
+                          <div className="font-bold text-xs text-[#172033]">{work.title}</div>
+                          <p className="text-[11px] text-[#5B6478] mt-0.5 leading-relaxed line-clamp-2">
+                            {work.workDescription}
+                          </p>
+                        </td>
+                        <td className="py-3.5 px-4 font-mono font-bold text-purple-700">
+                          {work.timeSpentHours} hrs
+                        </td>
+                        <td className="py-3.5 px-4 text-[#5B6478] text-[11px] font-medium">
+                          {work.verifiedBy}
+                        </td>
+                        <td className="py-3.5 px-5 text-right">
+                          <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold">
+                            <CheckCheck className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>{work.status}</span>
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------------
+  // ROLE-SPECIFIC VIEW 3: FACULTY & ADMIN ATTENDANCE MANAGEMENT
+  // -------------------------------------------------------------
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
       {/* Banner — Full Width on Mobile */}

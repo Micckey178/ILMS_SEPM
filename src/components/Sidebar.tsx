@@ -45,7 +45,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       {
         group: 'Academic & Practicals',
         items: [
-          { to: '/attendance', label: role === 'student' ? 'My Practical Attendance' : 'Faculty Attendance', icon: UserCheck },
+          {
+            to: '/attendance',
+            label: role === 'student'
+              ? 'My Practical Attendance'
+              : (role === 'technician' || role === 'labManager')
+              ? 'Technical Work Orders'
+              : 'Faculty Attendance',
+            icon: (role === 'technician' || role === 'labManager') ? Wrench : UserCheck
+          },
           { to: '/bookings', label: 'Booking Reservations', icon: CalendarCheck },
           ...(role !== 'student'
             ? [{ to: '/issue-return', label: 'Issue & Return Loans', icon: ArrowRightLeft }]
@@ -66,7 +74,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               group: 'Operations & Maintenance',
               items: [
                 { to: '/maintenance', label: 'Maintenance & Calibration', icon: Wrench },
-                ...(role === 'admin' || role === 'labManager'
+                ...(role === 'admin' || role === 'labManager' || role === 'technician'
                   ? [{ to: '/procurement', label: 'Vendor & Procurement', icon: ShoppingCart }]
                   : []),
                 { to: '/safety', label: 'Safety & Incidents', icon: ShieldAlert },

@@ -306,10 +306,10 @@ export const LaboratoriesPage: React.FC = () => {
 
       {/* DETAILED FACILITY MANAGEMENT DEEP-DIVE MODAL */}
       {selectedLab && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-md animate-in fade-in">
-          <div className="w-full max-w-5xl bg-white border border-[#E4E7F0] rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] text-[#172033]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-md animate-in fade-in overflow-y-auto">
+          <div className="w-full max-w-5xl bg-white border border-[#E4E7F0] rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[90vh] max-h-[92vh] text-[#172033] my-auto">
             {/* Modal Header */}
-            <div className="p-6 bg-white border-b border-[#E4E7F0] flex items-start justify-between">
+            <div className="p-5 sm:p-6 bg-white border-b border-[#E4E7F0] flex items-start justify-between shrink-0">
               <div>
                 <div className="flex items-center space-x-2">
                   <span className="px-3 py-0.5 rounded-full bg-cyan-50 text-cyan-800 border border-cyan-200 font-mono text-xs uppercase font-extrabold">
@@ -339,7 +339,7 @@ export const LaboratoriesPage: React.FC = () => {
             </div>
 
             {/* Modal Navigation Tabs */}
-            <div className="flex items-center space-x-1 px-6 border-b border-[#E4E7F0] overflow-x-auto bg-[#F5F6FC]">
+            <div className="flex items-center space-x-1 px-6 border-b border-[#E4E7F0] overflow-x-auto bg-[#F5F6FC] shrink-0">
               <button
                 onClick={() => setActiveTab('timetable')}
                 className={`py-3.5 px-4 text-xs font-extrabold border-b-2 transition shrink-0 flex items-center space-x-1.5 ${

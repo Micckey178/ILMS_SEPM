@@ -467,4 +467,23 @@ export interface VendorCatalogProduct {
   verifiedProduct: boolean;
 }
 
+export interface TechnicianWorkLog {
+  id: string;
+  workOrderNumber: string;
+  laboratoryId: string;
+  laboratoryName: string;
+  roomCode: string;
+  title: string;
+  category: 'WORKSTATION_DEPLOYMENT' | 'HARDWARE_REPAIR' | 'NETWORK_CONFIG' | 'CALIBRATION' | 'PREVENTIVE_MAINTENANCE' | 'EMERGENCY_FAULT';
+  equipmentName: string;
+  workDescription: string;
+  date: string;
+  timeSpentHours: number;
+  technicianId: string;
+  technicianName: string;
+  verifiedBy: string;
+  status: 'COMPLETED' | 'IN_PROGRESS';
+  costRupees: number;
+}
+
 

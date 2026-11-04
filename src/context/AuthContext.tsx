@@ -194,13 +194,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return role === 'labManager' || role === 'technician';
 
       case 'approve_procurement':
-        return role === 'labManager';
+        return role === 'labManager' || role === 'technician';
 
       case 'close_incident':
         return role === 'labManager' || role === 'technician';
 
       case 'view_audit_logs':
-        return role === 'labManager';
+        return role === 'labManager' || role === 'technician';
 
       default:
         return true;

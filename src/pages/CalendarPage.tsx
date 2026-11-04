@@ -188,6 +188,21 @@ export const CalendarPage: React.FC = () => {
     return Array.from(set).sort();
   }, [sessions]);
 
+  // Helper to resolve weekday from either weekday name or ISO date string (e.g. '2026-11-05')
+  const getSessionWeekday = (dateStr: string): string => {
+    if (!dateStr) return '';
+    const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const found = weekdays.find(w => w.toLowerCase() === dateStr.toLowerCase());
+    if (found) return found;
+    if (dateStr.includes('-')) {
+      const d = new Date(dateStr + 'T12:00:00');
+      if (!isNaN(d.getTime())) {
+        return weekdays[d.getDay()];
+      }
+    }
+    return dateStr;
+  };
+
   // Convert weekday sessions into dated events for the calendar month
   // ENFORCING ROLE-BASED VISIBILITY:
   // 1. For Student: ONLY sessions in allotted laboratories appear.
@@ -233,7 +248,7 @@ export const CalendarPage: React.FC = () => {
           }
         }
 
-        const sessionDay = s.date?.toLowerCase().trim();
+        const sessionDay = getSessionWeekday(s.date).toLowerCase().trim();
         const matchesWeekday = sessionDay ? dayNameToWeekday[sessionDay] === weekdayNum : false;
         const matchesExactDate = s.date === dateStr;
 
@@ -250,7 +265,7 @@ export const CalendarPage: React.FC = () => {
             type: 'practical',
             discipline: 'Computer Science',
             date: dateStr,
-            dayOfWeek: s.date,
+            dayOfWeek: getSessionWeekday(s.date),
             startTime: s.startTime,
             endTime: s.endTime,
             timeStr: `${s.startTime} - ${s.endTime}`,
@@ -271,7 +286,7 @@ export const CalendarPage: React.FC = () => {
     }
 
     return results;
-  }, [currentDate, sessions, laboratories, isStudent, isFaculty, facultyOnlyMode, currentUser]);
+  }, [currentDate, sessions, laboratories, isStudent, isFaculty, facultyOnlyMode, currentUser, selectedFaculty]);
 
   // Aggregate all events
   const allEvents = useMemo(() => {
@@ -398,9 +413,10 @@ export const CalendarPage: React.FC = () => {
         (s.groupName && s.groupName.toLowerCase().includes(searchQuery.toLowerCase())) ||
         s.courseCode.toLowerCase().includes(searchQuery.toLowerCase());
 
-      // 5. Day filter
+      // 5. Day filter (resolves either direct weekday name or ISO date to day of week)
+      const sessionDay = getSessionWeekday(s.date);
       const matchesDay =
-        selectedDay === 'ALL' || s.date.toLowerCase() === selectedDay.toLowerCase();
+        selectedDay === 'ALL' || sessionDay.toLowerCase() === selectedDay.toLowerCase();
 
       // 6. Faculty dropdown filter
       const matchesFaculty =
@@ -422,7 +438,7 @@ export const CalendarPage: React.FC = () => {
     };
 
     timetableSessions.forEach(s => {
-      const day = s.date;
+      const day = getSessionWeekday(s.date);
       if (map[day]) {
         const timeHour = parseInt(s.startTime.split(':')[0], 10);
         const isPM = s.startTime.toLowerCase().includes('pm');
@@ -503,12 +519,13 @@ export const CalendarPage: React.FC = () => {
   // Helper to extract session for a cell in the Noticeboard Grid
   const getSessionForSlot = (sessionList: PracticalSession[], day: string, slot: '8:30' | '10:45' | '1:30' | '2:30') => {
     return sessionList.find(s => {
-      if (s.date.toLowerCase() !== day.toLowerCase()) return false;
+      const sessionDay = getSessionWeekday(s.date);
+      if (sessionDay.toLowerCase() !== day.toLowerCase()) return false;
       const start = s.startTime.toLowerCase();
-      if (slot === '8:30') return start.includes('8:30') || start.includes('08:30');
-      if (slot === '10:45') return start.includes('10:45');
-      if (slot === '1:30') return start.includes('1:30') || start.includes('01:30');
-      if (slot === '2:30') return start.includes('2:30') || start.includes('02:30');
+      if (slot === '8:30') return start.includes('8:30') || start.includes('08:30') || start.startsWith('08:') || start.startsWith('09:');
+      if (slot === '10:45') return start.includes('10:45') || start.startsWith('10:') || start.startsWith('11:') || start.startsWith('12:');
+      if (slot === '1:30') return start.includes('1:30') || start.includes('01:30') || start.startsWith('13:') || start.startsWith('14:');
+      if (slot === '2:30') return start.includes('2:30') || start.includes('02:30') || start.startsWith('14:') || start.startsWith('15:') || start.startsWith('16:');
       return false;
     });
   };
@@ -525,7 +542,7 @@ export const CalendarPage: React.FC = () => {
     };
 
     sessionList.forEach(s => {
-      const day = s.date;
+      const day = getSessionWeekday(s.date);
       if (map[day]) {
         const timeHour = parseInt(s.startTime.split(':')[0], 10);
         const isPM = s.startTime.toLowerCase().includes('pm');

@@ -8,17 +8,24 @@ import {
   AlertTriangle,
   Calendar,
   X,
-  FileCheck
+  FileCheck,
+  Search,
+  Filter,
+  Building2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { DataService } from '../services/dataService';
-import { MaintenanceRecord, EquipmentAsset } from '../types';
+import { MaintenanceRecord, EquipmentAsset, Laboratory } from '../types';
 import { formatINR } from '../utils/formatCurrency';
 
 export const MaintenancePage: React.FC = () => {
   const { activeLab, currentUser, can } = useAuth();
   const [records, setRecords] = useState<MaintenanceRecord[]>([]);
   const [equipmentList, setEquipmentList] = useState<EquipmentAsset[]>([]);
+  const [laboratories, setLaboratories] = useState<Laboratory[]>([]);
+  const [selectedLabId, setSelectedLabId] = useState<string>('ALL');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [loading, setLoading] = useState(true);
 
   // Modals
@@ -41,12 +48,14 @@ export const MaintenancePage: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [maint, equip] = await Promise.all([
-        DataService.getMaintenanceRecords(activeLab?.id),
-        DataService.getEquipment(activeLab?.id)
+      const [maint, equip, labs] = await Promise.all([
+        DataService.getMaintenanceRecords(),
+        DataService.getEquipment(),
+        DataService.getLaboratories()
       ]);
       setRecords(maint);
       setEquipmentList(equip);
+      setLaboratories(labs.filter(l => l.id !== 'lab-chem-01'));
       if (equip.length > 0) setSelectedEquipId(equip[0].id);
 
       const nextWeek = new Date();
@@ -70,7 +79,7 @@ export const MaintenancePage: React.FC = () => {
       await DataService.createMaintenanceRecord({
         equipmentId: selectedEquipId,
         equipmentName: equip?.name || 'Lab Instrument',
-        laboratoryId: activeLab?.id || 'lab-chem-01',
+        laboratoryId: selectedLabId !== 'ALL' ? selectedLabId : (activeLab?.id || 'lab-atl-01'),
         type: serviceType,
         scheduledDate: new Date(`${scheduledDate}T09:00:00Z`).toISOString(),
         serviceProvider,
@@ -104,6 +113,23 @@ export const MaintenancePage: React.FC = () => {
     }
   };
 
+  // Filtered maintenance records
+  const filteredRecords = records.filter(rec => {
+    const matchesLab = selectedLabId === 'ALL' || rec.laboratoryId === selectedLabId;
+    const matchesStatus = statusFilter === 'ALL' || rec.status === statusFilter;
+    const matchesSearch = !searchQuery ||
+      rec.equipmentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (rec.technicianName && rec.technicianName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (rec.serviceProvider && rec.serviceProvider.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (rec.faultDescription && rec.faultDescription.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    return matchesLab && matchesStatus && matchesSearch;
+  });
+
+  const scheduledCount = records.filter(r => r.status === 'SCHEDULED').length;
+  const inProgressCount = records.filter(r => r.status === 'IN_PROGRESS').length;
+  const completedCount = records.filter(r => r.status === 'COMPLETED').length;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -114,7 +140,7 @@ export const MaintenancePage: React.FC = () => {
               Asset Health & Calibration
             </span>
             <span className="text-[#5B6478] text-xs font-semibold">
-              {activeLab ? `${activeLab.name} (${activeLab.code})` : 'All Laboratories'} • Preventative schedules, fault tickets, and safety unblocking
+              All 12 Laboratories • Preventative schedules, fault tickets, and safety unblocking
             </span>
           </div>
           <h1 className="font-heading font-black text-2xl sm:text-4xl text-[#172033] mt-2">
@@ -136,6 +162,72 @@ export const MaintenancePage: React.FC = () => {
         )}
       </div>
 
+      {/* Metrics Row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="p-4 bg-white border border-[#E4E7F0] rounded-2xl shadow-xs">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-[#5B6478]">Total Tracked</div>
+          <div className="text-2xl font-black text-[#172033] mt-1">{records.length} Logs</div>
+        </div>
+        <div className="p-4 bg-white border border-[#E4E7F0] rounded-2xl shadow-xs">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-amber-600">Scheduled Due</div>
+          <div className="text-2xl font-black text-amber-700 mt-1">{scheduledCount}</div>
+        </div>
+        <div className="p-4 bg-white border border-[#E4E7F0] rounded-2xl shadow-xs">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-purple-600">In Progress</div>
+          <div className="text-2xl font-black text-purple-700 mt-1">{inProgressCount}</div>
+        </div>
+        <div className="p-4 bg-white border border-[#E4E7F0] rounded-2xl shadow-xs">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Completed</div>
+          <div className="text-2xl font-black text-emerald-700 mt-1">{completedCount}</div>
+        </div>
+      </div>
+
+      {/* Filters and Multi-Lab Selector */}
+      <div className="p-4 bg-white border border-[#E4E7F0] rounded-3xl shadow-card flex flex-col md:flex-row items-center gap-3">
+        <div className="relative flex-1 w-full">
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#5B6478]" />
+          <input
+            type="text"
+            placeholder="Search maintenance logs by instrument, technician, or fault..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-[#F5F6FC] border border-[#E4E7F0] rounded-2xl pl-10 pr-4 py-2 text-xs text-[#172033] placeholder-[#5B6478] focus:border-[#18BDF5] outline-none"
+          />
+        </div>
+
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          {/* Lab Selector */}
+          <div className="flex items-center space-x-1.5 w-full md:w-auto">
+            <Building2 className="w-4 h-4 text-[#8961D8] shrink-0" />
+            <select
+              value={selectedLabId}
+              onChange={(e) => setSelectedLabId(e.target.value)}
+              className="bg-[#F5F6FC] border border-[#E4E7F0] rounded-2xl px-3 py-2 text-xs font-bold text-[#172033] outline-none focus:border-[#18BDF5] w-full md:w-56"
+            >
+              <option value="ALL">🏛️ All 12 CSE Laboratories</option>
+              {laboratories.map((lab) => (
+                <option key={lab.id} value={lab.id}>
+                  {lab.code}: {lab.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Status Filter */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="bg-[#F5F6FC] border border-[#E4E7F0] rounded-2xl px-3 py-2 text-xs font-bold text-[#172033] outline-none focus:border-[#18BDF5] shrink-0"
+          >
+            <option value="ALL">All Statuses</option>
+            <option value="SCHEDULED">Scheduled</option>
+            <option value="IN_PROGRESS">In Progress</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="OVERDUE">Overdue</option>
+          </select>
+        </div>
+      </div>
+
       {/* Maintenance Records Table */}
       <div className="bg-white border border-[#E4E7F0] rounded-3xl overflow-hidden shadow-card">
         <div className="overflow-x-auto">
@@ -143,6 +235,7 @@ export const MaintenancePage: React.FC = () => {
             <thead>
               <tr className="border-b border-[#E4E7F0] bg-[#F5F6FC] text-[#5B6478] uppercase tracking-wider text-[10px] font-bold">
                 <th className="py-3.5 px-5">Instrument Asset</th>
+                <th className="py-3.5 px-4">Facility / Room</th>
                 <th className="py-3.5 px-4">Service Type</th>
                 <th className="py-3.5 px-4">Scheduled Date</th>
                 <th className="py-3.5 px-4">Technician / Vendor</th>
@@ -152,16 +245,17 @@ export const MaintenancePage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E4E7F0]">
-              {records.length === 0 ? (
+              {filteredRecords.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-[#5B6478] text-xs">
-                    No maintenance or calibration logs found.
+                  <td colSpan={8} className="py-12 text-center text-[#5B6478] text-xs">
+                    No maintenance or calibration logs found matching your filters.
                   </td>
                 </tr>
               ) : (
-                records.map((rec) => {
+                filteredRecords.map((rec) => {
                   const isOverdue = rec.status === 'OVERDUE' || (rec.status === 'SCHEDULED' && new Date(rec.scheduledDate).getTime() < Date.now());
                   const canSignoff = can('manage_equipment') && rec.status !== 'COMPLETED';
+                  const lab = laboratories.find(l => l.id === rec.laboratoryId);
 
                   return (
                     <tr key={rec.id} className="hover:bg-[#F5F6FC]/60 transition">
@@ -172,6 +266,19 @@ export const MaintenancePage: React.FC = () => {
                             "{rec.faultDescription}"
                           </div>
                         )}
+                        {rec.workPerformed && rec.status === 'COMPLETED' && (
+                          <div className="text-[10px] text-emerald-800 mt-0.5">
+                            ✓ {rec.workPerformed}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className="font-mono text-[11px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">
+                          {lab ? `${lab.code}` : rec.laboratoryId}
+                        </span>
+                        <div className="text-[10px] text-[#5B6478] mt-0.5 truncate max-w-[140px]">
+                          {lab ? lab.name : 'CSE Lab'}
+                        </div>
                       </td>
                       <td className="py-3.5 px-4 font-mono text-cyan-800 font-bold">
                         {rec.type}

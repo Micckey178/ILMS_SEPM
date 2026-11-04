@@ -517,6 +517,36 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                     <button
                       onClick={() => {
+                        switchUser('usr-fac-01');
+                        setShowUserMenu(false);
+                      }}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center justify-between ${
+                        currentUser.role === 'faculty' && !currentUser.displayName?.includes('Roopa')
+                          ? 'bg-purple-100 text-purple-900 font-black'
+                          : 'hover:bg-slate-100 text-slate-700'
+                      }`}
+                    >
+                      <span className="truncate">👨‍🏫 Prof. Rajesh Kumar (Faculty)</span>
+                      <span className="text-[10px] font-mono text-cyan-700 shrink-0">Faculty</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        switchUser('usr-tech-01');
+                        setShowUserMenu(false);
+                      }}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center justify-between ${
+                        currentUser.role === 'technician' || currentUser.role === 'labManager'
+                          ? 'bg-purple-100 text-purple-900 font-black'
+                          : 'hover:bg-slate-100 text-slate-700'
+                      }`}
+                    >
+                      <span className="truncate">🔧 Elena Alvarez (Lab Manager & Tech)</span>
+                      <span className="text-[10px] font-mono text-amber-700 shrink-0">Tech / Mgr</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
                         switchUser('usr-stud-01');
                         setShowUserMenu(false);
                       }}
