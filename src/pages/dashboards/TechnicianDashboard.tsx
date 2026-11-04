@@ -10,7 +10,12 @@ import {
   PackagePlus,
   Send,
   CalendarCheck,
-  Cpu
+  Calendar,
+  Cpu,
+  Building2,
+  ArrowRight,
+  Sparkles,
+  Layers
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -20,7 +25,9 @@ import {
   EquipmentAsset,
   MaintenanceRecord,
   FaultTicket,
-  IssueReturnTransaction
+  IssueReturnTransaction,
+  PracticalSession,
+  Laboratory
 } from '../../types';
 
 interface TechnicianDashboardProps {
@@ -40,23 +47,30 @@ export const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({
   const [loans, setLoans] = useState<IssueReturnTransaction[]>([]);
   const [maintenances, setMaintenances] = useState<MaintenanceRecord[]>([]);
   const [faultTickets, setFaultTickets] = useState<FaultTicket[]>([]);
+  const [sessions, setSessions] = useState<PracticalSession[]>([]);
+  const [allLabs, setAllLabs] = useState<Laboratory[]>([]);
+  const [selectedDayFilter, setSelectedDayFilter] = useState<string>('ALL');
 
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       try {
-        const [inv, eq, ln, mn, ft] = await Promise.all([
+        const [inv, eq, ln, mn, ft, ss, labs] = await Promise.all([
           DataService.getInventory(activeLab?.id),
           DataService.getEquipment(activeLab?.id),
           DataService.getIssueReturnTransactions(activeLab?.id),
           DataService.getMaintenanceRecords(activeLab?.id),
-          DataService.getFaultTickets(activeLab?.id)
+          DataService.getFaultTickets(activeLab?.id),
+          DataService.getPracticalSessions(),
+          DataService.getLaboratories()
         ]);
         setInventory(inv);
         setEquipment(eq);
         setLoans(ln);
         setMaintenances(mn);
         setFaultTickets(ft);
+        setSessions(ss);
+        setAllLabs(labs.filter(l => l.id !== 'lab-chem-01'));
       } catch (err) {
         console.error('Technician data load failed:', err);
       } finally {
@@ -103,6 +117,13 @@ export const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({
         {/* Large Quick Operational Task Buttons */}
         <div className="flex flex-wrap items-center gap-3">
           <button
+            onClick={() => navigate('/timetable')}
+            className="px-5 py-3 rounded-2xl bg-[#FFF8F2] hover:bg-[#F0E9FF] text-[#332B40] border border-[#E9DDF1] font-bold text-sm shadow-sm flex items-center gap-2 transition"
+          >
+            <CalendarCheck className="w-5 h-5 text-[#8961D8]" />
+            <span>All Lab Timetables (11 Labs)</span>
+          </button>
+          <button
             onClick={onOpenQRScanner}
             className="px-5 py-3 rounded-2xl bg-[#18BDF5] hover:bg-[#38BDF8] text-[#172033] font-extrabold text-sm shadow-md flex items-center gap-2 transition"
           >
@@ -124,7 +145,16 @@ export const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({
         <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-4">
           Frequently Used Operational Tasks
         </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
+          <button
+            onClick={() => navigate('/timetable')}
+            className="p-4 rounded-2xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-950/20 hover:bg-indigo-100 text-left transition group"
+          >
+            <CalendarCheck className="w-6 h-6 text-indigo-600 mb-2 group-hover:scale-110 transition" />
+            <h4 className="font-heading font-bold text-sm text-foreground dark:text-white">Class Timetables</h4>
+            <p className="text-xs text-muted-foreground mt-0.5">All 11 Labs & Class Schedules</p>
+          </button>
+
           <button
             onClick={() => navigate('/issue-return')}
             className="p-4 rounded-2xl border border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/20 hover:bg-purple-100 text-left transition group"
@@ -165,6 +195,26 @@ export const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({
 
       {/* KPI Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div
+          onClick={() => navigate('/timetable')}
+          className="p-5 bg-white dark:bg-slate-900 border border-border dark:border-slate-800 rounded-3xl shadow-card cursor-pointer hover:border-indigo-400 transition group"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase text-muted-foreground block group-hover:text-indigo-600 transition">
+              Class Timetables
+            </span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+              11 Labs
+            </span>
+          </div>
+          <span className="font-heading font-black text-3xl text-foreground dark:text-white mt-2 block">
+            {sessions.length} Classes
+          </span>
+          <p className="text-xs text-indigo-600 font-semibold mt-1">
+            Weekly Practical Schedule (CS-01 to CS-11) →
+          </p>
+        </div>
+
         <div className="p-5 bg-white dark:bg-slate-900 border border-border dark:border-slate-800 rounded-3xl shadow-card">
           <span className="text-xs font-bold uppercase text-muted-foreground block">Active Loans</span>
           <span className="font-heading font-black text-3xl text-foreground dark:text-white mt-2 block">
@@ -182,20 +232,122 @@ export const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({
         </div>
 
         <div className="p-5 bg-white dark:bg-slate-900 border border-border dark:border-slate-800 rounded-3xl shadow-card">
-          <span className="text-xs font-bold uppercase text-muted-foreground block">Critical Stock Shortages</span>
-          <span className="font-heading font-black text-3xl text-amber-600 mt-2 block">
-            {lowStock.length}
-          </span>
-          <p className="text-xs text-amber-600 font-semibold mt-1">Requires immediate reorder</p>
-        </div>
-
-        <div className="p-5 bg-white dark:bg-slate-900 border border-border dark:border-slate-800 rounded-3xl shadow-card">
           <span className="text-xs font-bold uppercase text-muted-foreground block">Open Fault Tickets</span>
           <span className="font-heading font-black text-3xl text-foreground dark:text-white mt-2 block">
             {faultTickets.length}
           </span>
           <p className="text-xs text-muted-foreground mt-1">Reported by lab users</p>
         </div>
+      </div>
+
+      {/* DEPARTMENT PRACTICAL CLASSES & WORKSTATION PREPARATION (ALL 11 LABS) */}
+      <div className="p-6 bg-white dark:bg-slate-900 border border-border dark:border-slate-800 rounded-3xl shadow-card space-y-5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border dark:border-slate-800 pb-4">
+          <div>
+            <div className="flex items-center space-x-2">
+              <span className="px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-[11px] font-bold font-mono">
+                ODD SEMESTER 2026-27
+              </span>
+              <span className="text-xs font-bold text-muted-foreground">
+                All 11 CSE Laboratories & Classes
+              </span>
+            </div>
+            <h3 className="font-heading font-extrabold text-xl text-foreground dark:text-white mt-1">
+              Class Timetables & Equipment Readiness Overview
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Review assigned classes across all laboratories to ensure workstation operating systems, compilers, networks, and lab benches are pre-calibrated.
+            </p>
+          </div>
+
+          <button
+            onClick={() => navigate('/timetable')}
+            className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-[#BCA0F5] to-[#8961D8] hover:opacity-95 text-white font-extrabold text-xs shadow-sm flex items-center gap-2 self-start md:self-auto shrink-0 transition"
+          >
+            <CalendarCheck className="w-4 h-4" />
+            <span>Open Master Noticeboard Timetable →</span>
+          </button>
+        </div>
+
+        {/* Day Filter Chips */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+          {['ALL', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(day => (
+            <button
+              key={day}
+              onClick={() => setSelectedDayFilter(day)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0 ${
+                selectedDayFilter === day
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {day === 'ALL' ? 'All Weekdays' : day}
+            </button>
+          ))}
+        </div>
+
+        {/* Class Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {sessions
+            .filter(s => selectedDayFilter === 'ALL' || s.date.toLowerCase() === selectedDayFilter.toLowerCase())
+            .slice(0, 9)
+            .map(session => {
+              const lab = allLabs.find(l => l.id === session.laboratoryId);
+              return (
+                <div
+                  key={session.id}
+                  className="p-4 rounded-2xl border border-border dark:border-slate-800 bg-slate-50/60 dark:bg-slate-850/60 hover:bg-slate-100/70 transition space-y-2.5"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-black text-xs px-2.5 py-1 rounded-xl bg-purple-100 text-purple-800 dark:bg-purple-950/80 dark:text-purple-300">
+                      {lab?.code || 'CS-LAB'} • {lab?.name?.replace('Laboratory', 'Lab') || 'Academic Lab'}
+                    </span>
+                    <span className="text-[11px] font-bold text-muted-foreground">
+                      {session.date}
+                    </span>
+                  </div>
+
+                  <div>
+                    <h4 className="font-bold text-sm text-foreground dark:text-white leading-snug">
+                      {session.title}
+                    </h4>
+                    <p className="text-xs font-mono font-semibold text-purple-600 dark:text-purple-400 mt-0.5">
+                      {session.courseCode} {session.groupName ? `• ${session.groupName}` : ''}
+                    </p>
+                  </div>
+
+                  <div className="pt-2 border-t border-border/60 dark:border-slate-700/60 flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span className="flex items-center gap-1 font-semibold">
+                      <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                      {session.startTime} - {session.endTime}
+                    </span>
+                    <span className="font-bold text-foreground dark:text-slate-200">
+                      {session.facultyName}
+                    </span>
+                  </div>
+
+                  {session.requiredEquipment && session.requiredEquipment.length > 0 && (
+                    <div className="text-[10px] text-muted-foreground bg-white dark:bg-slate-800 p-2 rounded-xl border border-border/50">
+                      <span className="font-bold text-foreground">Equipment: </span>
+                      {session.requiredEquipment.join(', ')}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+        </div>
+
+        {sessions.length > 9 && (
+          <div className="text-center pt-2">
+            <button
+              onClick={() => navigate('/timetable')}
+              className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline inline-flex items-center gap-1"
+            >
+              <span>View all {sessions.length} practical classes in Master Noticeboard</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Two columns: Fault Tickets & Low Stock Inventory */}

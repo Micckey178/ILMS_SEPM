@@ -28,7 +28,8 @@ import {
   ShieldAlert,
   User,
   SlidersHorizontal,
-  Eye
+  Eye,
+  Wrench
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { DataService } from '../services/dataService';
@@ -60,8 +61,9 @@ export const CalendarPage: React.FC = () => {
   const isFaculty = currentUser.role === 'faculty';
   const isAdmin = currentUser.role === 'admin';
   const isLabManager = currentUser.role === 'labManager';
+  const isTechnician = currentUser.role === 'technician';
 
-  // For faculty: Default to showing only classes they are taking
+  // For faculty: Default to showing only classes they are taking; for admins & technicians: always show all classes & labs
   const [facultyOnlyMode, setFacultyOnlyMode] = useState<boolean>(() => isFaculty);
 
   // Filters
@@ -104,8 +106,10 @@ export const CalendarPage: React.FC = () => {
   useEffect(() => {
     if (isFaculty) {
       setFacultyOnlyMode(true);
+    } else {
+      setFacultyOnlyMode(false);
     }
-  }, [currentUser]);
+  }, [currentUser, isFaculty]);
 
   // Check if a faculty user is taking a given session
   const isCurrentUserTakingClass = (s: PracticalSession): boolean => {
@@ -566,7 +570,14 @@ export const CalendarPage: React.FC = () => {
             {isAdmin && (
               <span className="px-3 py-1 rounded-full bg-[#FFF8F2] text-[#332B40] border border-[#FFD2BF] text-xs font-bold flex items-center gap-1">
                 <BadgeCheck className="w-3.5 h-3.5 text-[#8961D8]" />
-                Admin Master View: All 11 CSE Laboratories
+                Admin Master View: All 11 CSE Laboratories & All Classes
+              </span>
+            )}
+
+            {isTechnician && (
+              <span className="px-3 py-1 rounded-full bg-[#EBF3FF] text-[#1D4ED8] border border-[#BFDBFE] text-xs font-bold flex items-center gap-1">
+                <Wrench className="w-3.5 h-3.5" />
+                Technician Operations View: All 11 CSE Laboratories & All Classes
               </span>
             )}
           </div>
@@ -579,7 +590,9 @@ export const CalendarPage: React.FC = () => {
               ? `Personalized timetable displaying classes for your officially allotted laboratories (${studentAllottedLabs.map(l => l.code).join(', ')}).`
               : isFaculty
               ? `Personalized faculty schedule displaying all days (Monday to Saturday) with the exact practical sessions assigned to you.`
-              : `Comprehensive institutional schedule showing practical classes, faculty assignments, and workstations across all laboratories.`}
+              : isTechnician
+              ? `Full operational view of all academic classes across all 11 CSE laboratories to prepare workstations, equipment, and lab systems.`
+              : `Comprehensive institutional master schedule displaying all practical classes, student batches, and faculty duty rosters across all 11 laboratories.`}
           </p>
         </div>
 

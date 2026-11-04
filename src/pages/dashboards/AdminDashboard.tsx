@@ -172,6 +172,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
         <div className="flex flex-wrap items-center gap-3">
           <button
+            onClick={() => navigate('/timetable')}
+            className="px-4 py-2.5 rounded-2xl bg-[#FFF8F2] hover:bg-[#F0E9FF] text-[#332B40] border border-[#E9DDF1] font-bold text-sm transition shadow-xs flex items-center gap-2"
+          >
+            <CalendarCheck className="w-4 h-4 text-[#8961D8]" />
+            <span>Master Timetables (11 Labs)</span>
+          </button>
+          <button
             onClick={onOpenLiveAvailability}
             className="px-4 py-2.5 rounded-2xl bg-[#18BDF5] hover:bg-[#38BDF8] text-[#172033] font-extrabold text-sm transition shadow-md flex items-center gap-2"
           >
@@ -215,7 +222,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       </div>
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6">
+        <div
+          onClick={() => navigate('/timetable')}
+          className="p-5 bg-white dark:bg-slate-900 border border-border dark:border-slate-800 rounded-3xl shadow-card transition hover:shadow-card-hover hover:border-purple-400 cursor-pointer group"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground group-hover:text-purple-600 transition">
+              Class Timetables
+            </span>
+            <div className="w-10 h-10 rounded-2xl bg-purple-100 dark:bg-purple-950/60 text-purple-600 flex items-center justify-center group-hover:scale-105 transition">
+              <CalendarCheck className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <span className="font-heading font-black text-3xl sm:text-4xl text-foreground dark:text-white">
+              11 Labs
+            </span>
+            <p className="text-xs text-purple-600 font-bold mt-1 flex items-center gap-1">
+              <span>All Classes & Faculty</span>
+              <span className="text-muted-foreground">• Odd Sem 26-27</span>
+            </p>
+          </div>
+        </div>
+
         <div
           onClick={() => navigate('/laboratories')}
           className="p-5 bg-white dark:bg-slate-900 border border-border dark:border-slate-800 rounded-3xl shadow-card transition hover:shadow-card-hover hover:border-purple-400 cursor-pointer group"
