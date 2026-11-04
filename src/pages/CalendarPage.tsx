@@ -379,7 +379,12 @@ export const CalendarPage: React.FC = () => {
       }
 
       // 3. Laboratory filter
-      const matchesLab = selectedLabId === 'ALL' || s.laboratoryId === selectedLabId;
+      let matchesLab = selectedLabId === 'ALL' || s.laboratoryId === selectedLabId;
+      if (!matchesLab && currentLab) {
+        if (currentLab.id === s.laboratoryId) matchesLab = true;
+        if (currentLab.name.toLowerCase().includes('vinodham') && s.laboratoryId === 'lab-vin-01') matchesLab = true;
+        if (currentLab.code && s.laboratoryId.toLowerCase().includes(currentLab.code.toLowerCase())) matchesLab = true;
+      }
 
       // 4. Search query
       const matchesSearch =
@@ -399,7 +404,7 @@ export const CalendarPage: React.FC = () => {
 
       return matchesLab && matchesSearch && matchesDay && matchesFaculty;
     });
-  }, [sessions, selectedLabId, searchQuery, selectedDay, selectedFaculty, isStudent, isFaculty, facultyOnlyMode, currentUser]);
+  }, [sessions, selectedLabId, currentLab, searchQuery, selectedDay, selectedFaculty, isStudent, isFaculty, facultyOnlyMode, currentUser]);
 
   // Noticeboard Morning & Afternoon Faculty Table Map
   const noticeboardFacultyRoster = useMemo(() => {
@@ -1030,46 +1035,56 @@ export const CalendarPage: React.FC = () => {
                           LUNCH
                         </td>
 
-                        {/* Afternoon 1:30 - 2:30 (Single Slot) */}
+                        {/* Afternoon Slots (1:30 - 4:30) */}
                         {afternoonSlot1 ? (
-                          <td className="p-2 border-r border-[#E9DDF1]">
-                            <div
-                              onClick={() => setSelectedEvent(afternoonSlot1)}
-                              className="p-2.5 rounded-2xl bg-[#F0E9FF] border border-[#BCA0F5] shadow-xs hover:shadow-md cursor-pointer transition text-left"
-                            >
-                              <span className="font-heading font-black text-xs text-[#332B40] block truncate">
-                                {afternoonSlot1.groupName || afternoonSlot1.title}
-                              </span>
-                              <span className="text-[10px] font-bold text-[#8961D8] block truncate">
-                                {afternoonSlot1.facultyName}
-                              </span>
-                            </div>
-                          </td>
-                        ) : (
-                          <td className="p-2 border-r border-[#E9DDF1] text-[#71667D]/40 text-xs italic">—</td>
-                        )}
-
-                        {/* Afternoon 2:30 - 4:30 (Spans 2 periods) */}
-                        {afternoonSlot2 ? (
-                          <td colSpan={2} className="p-2">
-                            <div
-                              onClick={() => setSelectedEvent(afternoonSlot2)}
-                              className="p-3 rounded-2xl bg-gradient-to-r from-[#FBE5EF] to-[#FFF8F2] border border-[#E9DDF1] shadow-xs hover:shadow-md cursor-pointer transition text-left"
-                            >
-                              <div className="font-heading font-black text-xs text-[#332B40] flex items-center justify-between">
-                                <span>{afternoonSlot2.groupName || afternoonSlot2.title}</span>
-                                <span className="text-[10px] font-bold text-[#8961D8]">{afternoonSlot2.startTime}</span>
+                          <>
+                            {/* Spans 1:30 - 3:30 (2 periods: 1:30-2:30 and 2:30-3:30) */}
+                            <td colSpan={2} className="p-2 border-r border-[#E9DDF1]">
+                              <div
+                                onClick={() => setSelectedEvent(afternoonSlot1)}
+                                className="p-3 rounded-2xl bg-gradient-to-r from-[#F0E9FF] to-[#FBE5EF] border border-[#BCA0F5] shadow-xs hover:shadow-md cursor-pointer transition text-left"
+                              >
+                                <div className="font-heading font-black text-xs text-[#332B40] flex items-center justify-between">
+                                  <span>{afternoonSlot1.groupName || afternoonSlot1.title}</span>
+                                  <span className="text-[10px] font-bold text-[#8961D8]">{afternoonSlot1.startTime}</span>
+                                </div>
+                                <p className="text-[11px] font-extrabold text-[#8961D8] mt-0.5 truncate">
+                                  👨‍🏫 {afternoonSlot1.facultyName}
+                                </p>
+                                <p className="text-[10px] text-[#71667D] truncate mt-0.5">
+                                  {laboratories.find(l => l.id === afternoonSlot1.laboratoryId)?.name}
+                                </p>
                               </div>
-                              <p className="text-[11px] font-extrabold text-[#8961D8] mt-0.5 truncate">
-                                👨‍🏫 {afternoonSlot2.facultyName}
-                              </p>
-                              <p className="text-[10px] text-[#71667D] truncate mt-0.5">
-                                {laboratories.find(l => l.id === afternoonSlot2.laboratoryId)?.name}
-                              </p>
-                            </div>
-                          </td>
+                            </td>
+                            {/* 3:30 - 4:30 column */}
+                            <td className="p-2 text-[#71667D]/40 text-xs italic">—</td>
+                          </>
+                        ) : afternoonSlot2 ? (
+                          <>
+                            {/* 1:30 - 2:30 column empty */}
+                            <td className="p-2 border-r border-[#E9DDF1] text-[#71667D]/40 text-xs italic">—</td>
+                            {/* Spans 2:30 - 4:30 (2 periods: 2:30-3:30 and 3:30-4:30) */}
+                            <td colSpan={2} className="p-2">
+                              <div
+                                onClick={() => setSelectedEvent(afternoonSlot2)}
+                                className="p-3 rounded-2xl bg-gradient-to-r from-[#FBE5EF] to-[#FFF8F2] border border-[#E9DDF1] shadow-xs hover:shadow-md cursor-pointer transition text-left"
+                              >
+                                <div className="font-heading font-black text-xs text-[#332B40] flex items-center justify-between">
+                                  <span>{afternoonSlot2.groupName || afternoonSlot2.title}</span>
+                                  <span className="text-[10px] font-bold text-[#8961D8]">{afternoonSlot2.startTime}</span>
+                                </div>
+                                <p className="text-[11px] font-extrabold text-[#8961D8] mt-0.5 truncate">
+                                  👨‍🏫 {afternoonSlot2.facultyName}
+                                </p>
+                                <p className="text-[10px] text-[#71667D] truncate mt-0.5">
+                                  {laboratories.find(l => l.id === afternoonSlot2.laboratoryId)?.name}
+                                </p>
+                              </div>
+                            </td>
+                          </>
                         ) : (
                           <>
+                            <td className="p-2 border-r border-[#E9DDF1] text-[#71667D]/40 text-xs italic">—</td>
                             <td className="p-2 border-r border-[#E9DDF1] text-[#71667D]/40 text-xs italic">—</td>
                             <td className="p-2 text-[#71667D]/40 text-xs italic">—</td>
                           </>

@@ -2096,8 +2096,8 @@ export const INITIAL_PRACTICAL_SESSIONS: PracticalSession[] = [
     studentCount: 32,
     attendanceCount: 32,
     date: 'Thursday',
-    startTime: '02:30 PM',
-    endTime: '04:30 PM',
+    startTime: '01:30 PM',
+    endTime: '03:30 PM',
     requiredEquipment: ['Standard Build Tools (Make/CMake)'],
     status: 'SCHEDULED'
   },
@@ -2144,8 +2144,8 @@ export const INITIAL_PRACTICAL_SESSIONS: PracticalSession[] = [
     studentCount: 30,
     attendanceCount: 30,
     date: 'Friday',
-    startTime: '02:30 PM',
-    endTime: '04:30 PM',
+    startTime: '01:30 PM',
+    endTime: '03:30 PM',
     requiredEquipment: ['Automated Code Review Bench'],
     status: 'SCHEDULED'
   },

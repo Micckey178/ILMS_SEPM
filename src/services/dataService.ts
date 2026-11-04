@@ -179,38 +179,28 @@ class LocalStoreManager {
 
   public getLabs(): Laboratory[] {
     let labs = this.get('laboratories', INITIAL_LABORATORIES);
-    // Ensure all authentic laboratories exist in the collection
-    const existingIds = new Set((labs || []).map(l => l.id));
-    const missing = INITIAL_LABORATORIES.filter(l => !existingIds.has(l.id));
-    if (missing.length > 0) {
-      labs = [...(labs || []), ...missing];
-      this.set('laboratories', labs);
+    const map = new Map<string, Laboratory>();
+    // 1. Authoritative 11 department laboratories from INITIAL_LABORATORIES
+    for (const initLab of INITIAL_LABORATORIES) {
+      map.set(initLab.id, initLab);
     }
-    const standardCodes: Record<string, string> = {
-      'lab-atl-01': 'CS-01',
-      'lab-atl-02': 'CS-02',
-      'lab-atl-03': 'CS-03',
-      'lab-sll-01': 'CS-04',
-      'lab-sll-02': 'CS-05',
-      'lab-bfl-01': 'CS-06',
-      'lab-bfl-02': 'CS-07',
-      'lab-bfl-03': 'CS-08',
-      'lab-vin-01': 'CS-09',
-      'lab-cbl-01': 'CS-10',
-      'lab-cbl-02': 'CS-11'
-    };
-    let modified = false;
-    const standardized = labs.map(l => {
-      if (standardCodes[l.id] && l.code !== standardCodes[l.id]) {
-        modified = true;
-        return { ...l, code: standardCodes[l.id] };
+    // 2. Retain custom user laboratories that do not duplicate the department labs
+    if (Array.isArray(labs)) {
+      for (const l of labs) {
+        const isDeptLab = INITIAL_LABORATORIES.some(
+          init => init.id === l.id || 
+                  init.name.toLowerCase() === l.name?.toLowerCase() || 
+                  l.name?.toLowerCase().includes('vinodham') ||
+                  (init.code && init.code === l.code)
+        );
+        if (!isDeptLab && !map.has(l.id)) {
+          map.set(l.id, l);
+        }
       }
-      return l;
-    });
-    if (modified) {
-      this.set('laboratories', standardized);
     }
-    return standardized;
+    const merged = Array.from(map.values());
+    this.set('laboratories', merged);
+    return merged;
   }
   public setLabs(labs: Laboratory[]) { this.set('laboratories', labs); }
 
@@ -249,13 +239,22 @@ class LocalStoreManager {
 
   public getPracticalSessions(): PracticalSession[] {
     let sessions = this.get('practicalSessions', INITIAL_PRACTICAL_SESSIONS);
-    const existingIds = new Set((sessions || []).map(s => s.id));
-    const missing = INITIAL_PRACTICAL_SESSIONS.filter(s => !existingIds.has(s.id));
-    if (missing.length > 0) {
-      sessions = [...(sessions || []), ...missing];
-      this.set('practicalSessions', sessions);
+    const map = new Map<string, PracticalSession>();
+    // 1. Authoritative official practical sessions from physical noticeboard
+    for (const initSess of INITIAL_PRACTICAL_SESSIONS) {
+      map.set(initSess.id, initSess);
     }
-    return sessions;
+    // 2. Retain any user-scheduled practical sessions
+    if (Array.isArray(sessions)) {
+      for (const s of sessions) {
+        if (!map.has(s.id)) {
+          map.set(s.id, s);
+        }
+      }
+    }
+    const merged = Array.from(map.values());
+    this.set('practicalSessions', merged);
+    return merged;
   }
   public setPracticalSessions(s: PracticalSession[]) { this.set('practicalSessions', s); }
 
@@ -352,37 +351,37 @@ export class DataService {
 
   // --- LABORATORIES ---
   static async getLaboratories(): Promise<Laboratory[]> {
-    let labs: Laboratory[] = [];
+    let firestoreLabs: Laboratory[] = [];
     let firestoreIds = new Set<string>();
 
     if (isFirebaseConfigured() && db) {
       try {
         const snap = await getDocs(collection(db, 'laboratories'));
         if (!snap.empty) {
-          labs = snap.docs.map(d => ({ id: d.id, ...d.data() } as Laboratory));
-          firestoreIds = new Set(labs.map(l => l.id));
+          firestoreLabs = snap.docs.map(d => ({ id: d.id, ...d.data() } as Laboratory));
+          firestoreIds = new Set(firestoreLabs.map(l => l.id));
         }
       } catch (err) {
         console.warn('Firestore fetch failed, using local store', err);
       }
     }
 
-    // Always merge with localStore and INITIAL_LABORATORIES so ALL 11 CSE Department laboratories
-    // (CS-01 to CS-11) are unconditionally present, even if Firestore only had a single laboratory!
-    const localLabs = localStore.getLabs();
-    const existingIds = new Set(labs.map(l => l.id));
-
-    for (const l of localLabs) {
-      if (!existingIds.has(l.id)) {
-        labs.push(l);
-        existingIds.add(l.id);
-      }
+    // Always start with the authoritative 11 department laboratories from INITIAL_LABORATORIES
+    const labMap = new Map<string, Laboratory>();
+    for (const initLab of INITIAL_LABORATORIES) {
+      labMap.set(initLab.id, initLab);
     }
 
-    for (const l of INITIAL_LABORATORIES) {
-      if (!existingIds.has(l.id)) {
-        labs.push(l);
-        existingIds.add(l.id);
+    // Retain custom Firestore laboratories that do not duplicate or corrupt the 11 department labs
+    for (const fl of firestoreLabs) {
+      const isDeptLab = INITIAL_LABORATORIES.some(
+        init => init.id === fl.id || 
+                init.name.toLowerCase() === fl.name?.toLowerCase() || 
+                fl.name?.toLowerCase().includes('vinodham') ||
+                (init.code && init.code === fl.code)
+      );
+      if (!isDeptLab && !labMap.has(fl.id)) {
+        labMap.set(fl.id, fl);
       }
     }
 
@@ -400,12 +399,12 @@ export class DataService {
       'lab-cbl-02': 'CS-11'
     };
 
-    const standardized = labs.map(l => standardCodes[l.id] ? { ...l, code: standardCodes[l.id] } : l);
+    const standardized = Array.from(labMap.values()).map(l => standardCodes[l.id] ? { ...l, code: standardCodes[l.id] } : l);
     localStore.setLabs(standardized);
 
     // Opportunistically sync missing department laboratories to Firestore in the background
     const firestoreInstance = db;
-    if (isFirebaseConfigured() && firestoreInstance && firestoreIds.size > 0 && firestoreIds.size < INITIAL_LABORATORIES.length) {
+    if (isFirebaseConfigured() && firestoreInstance && firestoreIds.size < INITIAL_LABORATORIES.length) {
       INITIAL_LABORATORIES.forEach(async (initLab) => {
         if (!firestoreIds.has(initLab.id)) {
           try {
