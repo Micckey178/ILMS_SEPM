@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { X, Printer, Tag, Download } from 'lucide-react';
+import { X, Printer, Tag, ExternalLink, Globe, Hash } from 'lucide-react';
 import { UniversalInventoryItem, EquipmentAsset } from '../types';
 
 interface QRLabelModalProps {
@@ -11,6 +11,8 @@ interface QRLabelModalProps {
 }
 
 export const QRLabelModal: React.FC<QRLabelModalProps> = ({ isOpen, onClose, item, type }) => {
+  const [useWebLink, setUseWebLink] = useState(true);
+
   if (!isOpen || !item) return null;
 
   const isEquip = type === 'equipment';
@@ -19,8 +21,25 @@ export const QRLabelModal: React.FC<QRLabelModalProps> = ({ isOpen, onClose, ite
 
   const title = item.name;
   const identifier = equip ? equip.assetTag : inv?.sku || item.id;
-  const qrData = item.qrCode || `ILMS:${type}:${item.id}`;
   const location = equip ? equip.location : inv?.storageLocation || 'Laboratory Store';
+
+  // Compute live web URL for mobile phone camera scanning
+  const getWebUrl = () => {
+    const savedIp = (typeof window !== 'undefined' && localStorage.getItem('ilms_host_ip')) || '192.168.29.29';
+    const port = typeof window !== 'undefined' && window.location.port ? window.location.port : '5173';
+    const host =
+      typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? `${savedIp}:${port}`
+        : typeof window !== 'undefined'
+        ? window.location.host
+        : `${savedIp}:${port}`;
+
+    return `http://${host}/${type === 'equipment' ? 'equipment' : 'inventory'}?search=${encodeURIComponent(identifier)}`;
+  };
+
+  const webUrl = getWebUrl();
+  const rawTag = item.qrCode || `ILMS:${type}:${item.id}`;
+  const qrData = useWebLink ? webUrl : rawTag;
 
   const handlePrint = () => {
     window.print();
@@ -86,9 +105,52 @@ export const QRLabelModal: React.FC<QRLabelModalProps> = ({ isOpen, onClose, ite
             </div>
           </div>
 
-          <p className="text-xs text-[#5B6478] mt-4 text-center">
-            Standard 2.5" x 2" thermal sticker or adhesive label format.
-          </p>
+          {/* Format Toggle & Info */}
+          <div className="w-72 mt-3 space-y-2">
+            <div className="flex items-center justify-center p-1 bg-[#F5F6FC] rounded-xl border border-[#E4E7F0] text-xs">
+              <button
+                type="button"
+                onClick={() => setUseWebLink(true)}
+                className={`flex-1 py-1 px-2 rounded-lg font-bold transition flex items-center justify-center space-x-1 ${
+                  useWebLink ? 'bg-cyan-500 text-white shadow-xs' : 'text-[#5B6478] hover:text-[#172033]'
+                }`}
+              >
+                <Globe className="w-3.5 h-3.5" />
+                <span>Web Link</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setUseWebLink(false)}
+                className={`flex-1 py-1 px-2 rounded-lg font-bold transition flex items-center justify-center space-x-1 ${
+                  !useWebLink ? 'bg-cyan-500 text-white shadow-xs' : 'text-[#5B6478] hover:text-[#172033]'
+                }`}
+              >
+                <Hash className="w-3.5 h-3.5" />
+                <span>Raw Tag</span>
+              </button>
+            </div>
+
+            {useWebLink ? (
+              <div className="text-[11px] text-[#5B6478] text-center space-y-1">
+                <span>Phone cameras scanning this label will open the portal link directly.</span>
+                <div className="flex items-center justify-center space-x-1 text-[10px] font-mono text-cyan-700 truncate">
+                  <a
+                    href={webUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:underline flex items-center space-x-0.5 truncate"
+                  >
+                    <span>{webUrl}</span>
+                    <ExternalLink className="w-3 h-3 shrink-0 ml-0.5" />
+                  </a>
+                </div>
+              </div>
+            ) : (
+              <p className="text-[11px] text-[#5B6478] text-center">
+                Raw barcode value for hardware scanners: <span className="font-mono font-bold text-[#172033]">{rawTag}</span>
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Actions */}

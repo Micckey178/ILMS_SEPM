@@ -80,12 +80,25 @@ export const WelcomePage: React.FC = () => {
 
 
 
-  const [hostIp, setHostIp] = useState('192.168.42.181');
+  const [hostIp, setHostIp] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('ilms_host_ip') || '192.168.29.29';
+    }
+    return '192.168.29.29';
+  });
   const [copiedLink, setCopiedLink] = useState(false);
 
+  const currentPort = typeof window !== 'undefined' && window.location.port ? window.location.port : '5173';
   const mobileInstallUrl = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? `http://${hostIp}:5173`
-    : typeof window !== 'undefined' ? window.location.origin : `http://${hostIp}:5173`;
+    ? `http://${hostIp}:${currentPort}`
+    : typeof window !== 'undefined' ? window.location.origin : `http://${hostIp}:${currentPort}`;
+
+  const handleUpdateHostIp = (newIp: string) => {
+    setHostIp(newIp);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('ilms_host_ip', newIp);
+    }
+  };
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(mobileInstallUrl);
@@ -1425,22 +1438,22 @@ export const WelcomePage: React.FC = () => {
               </div>
 
               {/* QR Code for Fast Phone Connection */}
-              <div className="p-4 bg-white border border-[#E9DDF1] rounded-2xl space-y-3">
+              <div className="p-4 bg-white border border-[#E9DDF1] rounded-2xl space-y-3.5">
                 <div className="flex items-center space-x-3.5">
                   <div className="p-2 bg-white rounded-xl shadow-xs border border-[#E9DDF1] shrink-0">
                     <QRCodeSVG
                       value={mobileInstallUrl}
-                      size={90}
-                      level="M"
+                      size={105}
+                      level="Q"
                       fgColor="#332B40"
                     />
                   </div>
                   <div className="text-xs space-y-1.5 min-w-0 flex-1">
-                    <span className="font-bold text-[#332B40] block">Scan to Open on Phone</span>
+                    <span className="font-bold text-[#332B40] block">Scan to Open Link on Phone</span>
                     <p className="text-[11px] text-[#71667D] leading-tight">
-                      Ensure your phone is on the same network or mobile hotspot.
+                      Open your phone camera to launch ILMS. Both devices must be on the same Wi-Fi.
                     </p>
-                    <div className="flex items-center space-x-2 pt-1">
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
                       <button
                         type="button"
                         onClick={handleCopyLink}
@@ -1458,23 +1471,59 @@ export const WelcomePage: React.FC = () => {
                           </>
                         )}
                       </button>
-                      <span className="text-[10px] font-mono text-[#71667D] truncate">
-                        {mobileInstallUrl}
-                      </span>
+                      <a
+                        href={mobileInstallUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-2.5 py-1 rounded-lg bg-[#FFF8F2] hover:bg-[#FFEADA] border border-[#FFD2BF] text-[#8961D8] font-bold text-[10px] transition flex items-center space-x-1 shrink-0 active:scale-95"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        <span>Open Link</span>
+                      </a>
                     </div>
+                    <span className="text-[10px] font-mono text-[#71667D] truncate block pt-0.5">
+                      {mobileInstallUrl}
+                    </span>
                   </div>
                 </div>
 
                 {/* Network IP Config if switching Wi-Fi / Hotspot */}
-                <div className="pt-2 border-t border-[#E9DDF1]/60 flex items-center justify-between text-[11px] text-[#71667D]">
-                  <span className="font-medium">Active Network IP:</span>
-                  <input
-                    type="text"
-                    value={hostIp}
-                    onChange={(e) => setHostIp(e.target.value)}
-                    className="w-36 px-2 py-0.5 text-[11px] font-mono font-bold bg-[#FFF8F2] border border-[#E9DDF1] rounded-lg text-center text-[#332B40] focus:outline-none focus:border-[#8961D8]"
-                    title="Change if connected to a different Wi-Fi or mobile hotspot"
-                  />
+                <div className="pt-2 border-t border-[#E9DDF1]/60 space-y-2">
+                  <div className="flex items-center justify-between text-[11px] text-[#71667D]">
+                    <span className="font-medium">Host IP Address:</span>
+                    <input
+                      type="text"
+                      value={hostIp}
+                      onChange={(e) => handleUpdateHostIp(e.target.value)}
+                      className="w-36 px-2 py-0.5 text-[11px] font-mono font-bold bg-[#FFF8F2] border border-[#E9DDF1] rounded-lg text-center text-[#332B40] focus:outline-none focus:border-[#8961D8]"
+                      title="Current computer IP for phone access"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[10px]">
+                    <span className="text-[#71667D] font-medium">Quick switch:</span>
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateHostIp('192.168.29.29')}
+                      className={`px-2 py-0.5 rounded-md font-mono transition ${
+                        hostIp === '192.168.29.29'
+                          ? 'bg-[#8961D8] text-white font-bold'
+                          : 'bg-[#F0E9FF] text-[#8961D8] hover:bg-[#E2D2FE]'
+                      }`}
+                    >
+                      192.168.29.29 (Wi-Fi)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateHostIp('localhost')}
+                      className={`px-2 py-0.5 rounded-md font-mono transition ${
+                        hostIp === 'localhost'
+                          ? 'bg-[#8961D8] text-white font-bold'
+                          : 'bg-[#F0E9FF] text-[#8961D8] hover:bg-[#E2D2FE]'
+                      }`}
+                    >
+                      localhost
+                    </button>
+                  </div>
                 </div>
               </div>
 

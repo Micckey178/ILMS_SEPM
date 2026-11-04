@@ -13,6 +13,10 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src')
     }
   },
+  server: {
+    host: true, // Listen on all network interfaces (0.0.0.0) so phone can access
+    port: 5173,
+  },
   build: {
     chunkSizeWarningLimit: 2000,
   }

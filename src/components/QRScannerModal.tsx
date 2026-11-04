@@ -37,7 +37,7 @@ interface QRScannerModalProps {
 }
 
 interface IdentifiedAssetResult {
-  type: 'equipment' | 'inventory' | 'workstation' | 'laboratory' | 'student';
+  type: 'equipment' | 'inventory' | 'workstation' | 'laboratory' | 'student' | 'link';
   title: string;
   code: string;
   category: string;
@@ -245,7 +245,13 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({ isOpen, onClose,
     try {
       if (clean.startsWith('http://') || clean.startsWith('https://') || clean.startsWith('ilms://')) {
         const urlObj = new URL(clean);
-        const paramId = urlObj.searchParams.get('id') || urlObj.searchParams.get('sku') || urlObj.searchParams.get('tag') || urlObj.searchParams.get('code');
+        const paramId =
+          urlObj.searchParams.get('search') ||
+          urlObj.searchParams.get('q') ||
+          urlObj.searchParams.get('id') ||
+          urlObj.searchParams.get('sku') ||
+          urlObj.searchParams.get('tag') ||
+          urlObj.searchParams.get('code');
         if (paramId) {
           clean = paramId;
         } else {
@@ -403,6 +409,30 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({ isOpen, onClose,
       return;
     }
 
+    // --- F. Match Web Link / Portal URLs ---
+    const trimmedRaw = rawInput.trim();
+    if (trimmedRaw.startsWith('http://') || trimmedRaw.startsWith('https://') || trimmedRaw.startsWith('www.')) {
+      const fullUrl = trimmedRaw.startsWith('www.') ? `https://${trimmedRaw}` : trimmedRaw;
+      let displayHost = 'Web Link';
+      try {
+        displayHost = new URL(fullUrl).hostname;
+      } catch {}
+
+      const res: IdentifiedAssetResult = {
+        type: 'link',
+        title: 'Online Web Link Detected',
+        code: fullUrl,
+        category: 'Web URL / Portal Link',
+        location: displayHost,
+        statusBadge: 'Ready to Open',
+        statusColor: 'bg-indigo-100 text-indigo-800',
+        targetUrl: fullUrl,
+        rawItem: { url: fullUrl }
+      };
+      setIdentifiedResult(res);
+      return;
+    }
+
     // If no match found, prompt user with friendly assistance
     setErrorMsg(`Scanned code "${rawInput}" is not recognized. Try one of the test barcodes below, or enter a valid Tag (e.g. TAG-ATL1-7010) or SKU (e.g. SJBIT-SSD-1TB-NVME).`);
   };
@@ -521,12 +551,26 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({ isOpen, onClose,
                 <button
                   onClick={() => {
                     onClose();
-                    navigate(identifiedResult.targetUrl);
+                    if (
+                      identifiedResult.type === 'link' ||
+                      identifiedResult.targetUrl.startsWith('http://') ||
+                      identifiedResult.targetUrl.startsWith('https://')
+                    ) {
+                      window.open(identifiedResult.targetUrl, '_blank', 'noopener,noreferrer');
+                    } else {
+                      navigate(identifiedResult.targetUrl);
+                    }
                   }}
                   className="flex-1 py-2.5 px-4 rounded-2xl bg-gradient-to-r from-[#BCA0F5] to-[#8961D8] hover:opacity-95 text-white font-black text-xs shadow-md transition flex items-center justify-center space-x-1.5"
                 >
-                  <span>Open Record in Portal</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <span>
+                    {identifiedResult.type === 'link' ? 'Open Link in Browser' : 'Open Record in Portal'}
+                  </span>
+                  {identifiedResult.type === 'link' ? (
+                    <ExternalLink className="w-4 h-4" />
+                  ) : (
+                    <ArrowRight className="w-4 h-4" />
+                  )}
                 </button>
                 <button
                   onClick={() => {
