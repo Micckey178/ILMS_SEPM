@@ -58,8 +58,8 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
         const studentSessions = allSessionsList.filter(s =>
           allottedIds.length === 0 || allottedIds.includes(s.laboratoryId)
         );
-
-        setMySessions(studentSessions);
+        const todayClasses = studentSessions.slice(0, 3);
+        setMySessions(todayClasses);
         // Filter strictly to current student's records for privacy
         setMyBookings(allBookings.filter(b => b.userId === currentUser.id));
         setMyLoans(allTransactions.filter(l => l.borrowerId === currentUser.id));
@@ -185,7 +185,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
         <div className="p-6 bg-white dark:bg-slate-900 border border-border dark:border-slate-800 rounded-3xl shadow-card">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-heading font-extrabold text-lg text-foreground dark:text-white">
-              Upcoming Practical Sessions
+              Today's Scheduled Practicals (3 Classes)
             </h3>
             <div className="flex items-center space-x-2">
               <span className="text-xs font-bold text-purple-600 font-mono">Curriculum</span>

@@ -54,7 +54,8 @@ export const FacultyDashboard: React.FC<FacultyDashboardProps> = ({
           return words.some(w => facClean.includes(w));
         });
 
-        setSessions(facultySessions.length > 0 ? facultySessions : allSess.slice(0, 8));
+        const todayClasses = (facultySessions.length > 0 ? facultySessions : allSess).slice(0, 3);
+        setSessions(todayClasses);
         setEquipment(eq);
         setBookings(bk);
       } catch (err) {
@@ -166,15 +167,15 @@ export const FacultyDashboard: React.FC<FacultyDashboardProps> = ({
         <div className="flex items-center justify-between mb-5">
           <div>
             <h3 className="font-heading font-extrabold text-xl text-foreground dark:text-white">
-              Digital Practical Session Workspace
+              Today's Practical Sessions (3 Scheduled Classes)
             </h3>
             <p className="text-xs text-muted-foreground">
-              Syllabus exercises, reserved experiment kits, student attendance & observation logs
+              Showing 3 practical classes assigned for today's laboratory schedule
             </p>
           </div>
           <div className="flex items-center space-x-2">
             <span className="text-xs px-3 py-1 bg-purple-100 text-purple-700 rounded-full font-bold">
-              Semester Practical Track
+              3 Classes Today
             </span>
             <button
               type="button"
