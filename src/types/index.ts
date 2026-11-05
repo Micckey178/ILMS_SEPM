@@ -467,6 +467,8 @@ export interface VendorCatalogProduct {
   verifiedProduct: boolean;
 }
 
+export type TechnicianWorkCategory = 'WORKSTATION_DEPLOYMENT' | 'HARDWARE_REPAIR' | 'NETWORK_CONFIG' | 'CALIBRATION' | 'PREVENTIVE_MAINTENANCE' | 'EMERGENCY_FAULT';
+
 export interface TechnicianWorkLog {
   id: string;
   workOrderNumber: string;

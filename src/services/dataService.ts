@@ -267,7 +267,22 @@ class LocalStoreManager {
   }
   public setPracticalSessions(s: PracticalSession[]) { this.set('practicalSessions', s); }
 
-  public getFaultTickets(): FaultTicket[] { return this.get('faultTickets', INITIAL_FAULT_TICKETS); }
+  public getFaultTickets(): FaultTicket[] {
+    let tickets = this.get('faultTickets', INITIAL_FAULT_TICKETS);
+    const map = new Map<string, FaultTicket>();
+    for (const initT of INITIAL_FAULT_TICKETS) {
+      map.set(initT.id, initT);
+    }
+    if (Array.isArray(tickets)) {
+      for (const t of tickets) {
+        const existing = map.get(t.id);
+        map.set(t.id, existing ? { ...existing, ...t } : t);
+      }
+    }
+    const merged = Array.from(map.values());
+    this.set('faultTickets', merged);
+    return merged;
+  }
   public setFaultTickets(f: FaultTicket[]) { this.set('faultTickets', f); }
 
   public getAttendance(): AttendanceRecord[] { return this.get('attendance', INITIAL_ATTENDANCE); }
@@ -2070,6 +2085,81 @@ export class DataService {
     });
 
     return newTicket;
+  }
+
+  static async updateFaultTicket(
+    ticketId: string,
+    updates: {
+      status: 'OPEN' | 'INVESTIGATING' | 'REPAIR_SCHEDULED' | 'RESOLVED';
+      resolutionNote?: string;
+      assignedTechnicianId?: string;
+      assignedTechnicianName?: string;
+      partsReplaced?: string[];
+      timeSpentHours?: number;
+    },
+    currentUser: UserProfile
+  ): Promise<FaultTicket | null> {
+    const list = localStore.getFaultTickets();
+    const idx = list.findIndex(t => t.id === ticketId);
+    if (idx === -1) return null;
+
+    const currentTicket = list[idx];
+    const now = new Date().toISOString();
+    const newTimeline = [...(currentTicket.timeline || [])];
+
+    if (updates.resolutionNote) {
+      const stageName = updates.status === 'RESOLVED'
+        ? 'Resolved'
+        : updates.status === 'INVESTIGATING'
+        ? 'Investigating'
+        : updates.status === 'REPAIR_SCHEDULED'
+        ? 'Repair Scheduled'
+        : 'Inspection';
+
+      newTimeline.push({
+        stage: stageName,
+        timestamp: now,
+        note: `${updates.resolutionNote}${updates.partsReplaced && updates.partsReplaced.length > 0 ? ` (Parts: ${updates.partsReplaced.join(', ')})` : ''}`
+      });
+    }
+
+    const updatedTicket: FaultTicket = {
+      ...currentTicket,
+      status: updates.status,
+      assignedTechnicianId: updates.assignedTechnicianId || currentUser.id,
+      assignedTechnicianName: updates.assignedTechnicianName || currentUser.displayName,
+      resolvedAt: updates.status === 'RESOLVED' ? now : currentTicket.resolvedAt,
+      timeline: newTimeline
+    };
+
+    list[idx] = updatedTicket;
+    localStore.setFaultTickets(list);
+
+    // If resolved, restore equipment status to AVAILABLE if it was marked FAULTY or UNDER_MAINTENANCE
+    if (updates.status === 'RESOLVED' && updatedTicket.equipmentId) {
+      const equipList = localStore.getEquipment();
+      const eqIdx = equipList.findIndex(e => e.id === updatedTicket.equipmentId);
+      if (eqIdx !== -1) {
+        if (equipList[eqIdx].status === 'FAULTY' || equipList[eqIdx].status === 'UNDER_MAINTENANCE') {
+          equipList[eqIdx] = {
+            ...equipList[eqIdx],
+            status: 'AVAILABLE'
+          };
+          localStore.setEquipment(equipList);
+        }
+      }
+    }
+
+    await this.logAudit({
+      action: 'FAULT_RESOLVED',
+      category: 'MAINTENANCE',
+      laboratoryId: updatedTicket.laboratoryId,
+      userId: currentUser.id,
+      userName: currentUser.displayName,
+      details: `Fault Ticket "${updatedTicket.id}" for "${updatedTicket.equipmentName}" updated to ${updatedTicket.status}. ${updates.resolutionNote || ''}`
+    });
+
+    return updatedTicket;
   }
 
   // --- SMART LAB HEALTH SCORE ---

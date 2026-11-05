@@ -29,6 +29,8 @@ import {
   PracticalSession,
   Laboratory
 } from '../../types';
+import { FaultResolutionModal } from '../../components/FaultResolutionModal';
+import { StockMovementModal } from '../../components/StockMovementModal';
 
 interface TechnicianDashboardProps {
   onOpenQRScanner: () => void;
@@ -51,32 +53,38 @@ export const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({
   const [allLabs, setAllLabs] = useState<Laboratory[]>([]);
   const [selectedDayFilter, setSelectedDayFilter] = useState<string>('ALL');
 
+  // Technician Modals
+  const [selectedTicketForResolution, setSelectedTicketForResolution] = useState<FaultTicket | null>(null);
+  const [selectedStockItemForReceipt, setSelectedStockItemForReceipt] = useState<UniversalInventoryItem | null>(null);
+  const [isStockModalOpen, setIsStockModalOpen] = useState(false);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [inv, eq, ln, mn, ft, ss, labs] = await Promise.all([
+        DataService.getInventory(activeLab?.id),
+        DataService.getEquipment(activeLab?.id),
+        DataService.getIssueReturnTransactions(activeLab?.id),
+        DataService.getMaintenanceRecords(activeLab?.id),
+        DataService.getFaultTickets(activeLab?.id),
+        DataService.getPracticalSessions(),
+        DataService.getLaboratories()
+      ]);
+      setInventory(inv);
+      setEquipment(eq);
+      setLoans(ln);
+      setMaintenances(mn);
+      setFaultTickets(ft);
+      setSessions(ss);
+      setAllLabs(labs.filter(l => l.id !== 'lab-chem-01'));
+    } catch (err) {
+      console.error('Technician data load failed:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        const [inv, eq, ln, mn, ft, ss, labs] = await Promise.all([
-          DataService.getInventory(activeLab?.id),
-          DataService.getEquipment(activeLab?.id),
-          DataService.getIssueReturnTransactions(activeLab?.id),
-          DataService.getMaintenanceRecords(activeLab?.id),
-          DataService.getFaultTickets(activeLab?.id),
-          DataService.getPracticalSessions(),
-          DataService.getLaboratories()
-        ]);
-        setInventory(inv);
-        setEquipment(eq);
-        setLoans(ln);
-        setMaintenances(mn);
-        setFaultTickets(ft);
-        setSessions(ss);
-        setAllLabs(labs.filter(l => l.id !== 'lab-chem-01'));
-      } catch (err) {
-        console.error('Technician data load failed:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
     loadData();
   }, [activeLab]);
 
@@ -174,7 +182,11 @@ export const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({
           </button>
 
           <button
-            onClick={() => navigate('/inventory')}
+            type="button"
+            onClick={() => {
+              setSelectedStockItemForReceipt(lowStock[0] || inventory[0] || null);
+              setIsStockModalOpen(true);
+            }}
             className="p-4 rounded-2xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 hover:bg-emerald-100 text-left transition group"
           >
             <PackagePlus className="w-6 h-6 text-emerald-600 mb-2 group-hover:scale-110 transition" />
@@ -382,10 +394,12 @@ export const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({
                     </p>
                   </div>
                   <button
-                    onClick={() => navigate('/maintenance')}
-                    className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs"
+                    type="button"
+                    onClick={() => setSelectedTicketForResolution(ticket)}
+                    className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center gap-1 shadow-sm transition"
                   >
-                    Resolve
+                    <Wrench className="w-3.5 h-3.5" />
+                    <span>Inspect / Resolve</span>
                   </button>
                 </div>
               ))
@@ -404,7 +418,7 @@ export const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({
 
           <div className="space-y-3">
             {lowStock.map(item => (
-              <div key={item.id} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-border dark:border-slate-700/60 flex items-center justify-between">
+              <div key={item.id} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-border dark:border-slate-700/60 flex items-center justify-between gap-3">
                 <div>
                   <h4 className="font-bold text-sm text-foreground dark:text-white">{item.name}</h4>
                   <p className="text-xs text-muted-foreground mt-0.5">
@@ -414,17 +428,46 @@ export const TechnicianDashboard: React.FC<TechnicianDashboardProps> = ({
                     Current: {item.quantity} {item.unit} (Min: {item.minStock} {item.unit})
                   </p>
                 </div>
-                <button
-                  onClick={() => navigate('/procurement')}
-                  className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs"
-                >
-                  Create Reorder
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedStockItemForReceipt(item);
+                      setIsStockModalOpen(true);
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs"
+                  >
+                    Receive
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/procurement')}
+                    className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs"
+                  >
+                    Reorder
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </div>
+
+      {/* Technician Fault Resolution Modal */}
+      <FaultResolutionModal
+        isOpen={!!selectedTicketForResolution}
+        onClose={() => setSelectedTicketForResolution(null)}
+        ticket={selectedTicketForResolution}
+        onSuccess={loadData}
+      />
+
+      {/* Technician Stock Inward Modal */}
+      <StockMovementModal
+        isOpen={isStockModalOpen}
+        onClose={() => setIsStockModalOpen(false)}
+        item={selectedStockItemForReceipt}
+        onSuccess={loadData}
+      />
     </div>
   );
 };

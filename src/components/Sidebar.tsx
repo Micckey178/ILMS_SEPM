@@ -36,6 +36,43 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const getNavLinks = () => {
     const role = currentUser.role;
 
+    // Technician-optimized section order (Operations & Maintenance upfront)
+    if (role === 'technician') {
+      return [
+        {
+          group: 'Overview',
+          items: [
+            { to: '/', label: 'Overview Dashboard', icon: LayoutDashboard },
+            { to: '/schedule', label: 'Department Timetables & Schedule', icon: Calendar },
+          ]
+        },
+        {
+          group: 'Operations & Maintenance',
+          items: [
+            { to: '/maintenance', label: 'Work Orders & Maintenance', icon: Wrench },
+            { to: '/procurement', label: 'Vendor & Procurement', icon: ShoppingCart },
+            { to: '/safety', label: 'Safety & Incidents', icon: ShieldAlert },
+            { to: '/reports', label: 'Reports & Audit Logs', icon: FileSpreadsheet },
+          ]
+        },
+        {
+          group: 'Laboratories & Assets',
+          items: [
+            { to: '/inventory', label: 'Universal Inventory', icon: Boxes },
+            { to: '/equipment', label: 'Equipment Assets', icon: Cpu },
+            { to: '/specialized', label: 'Domain Modules', icon: FlaskConical },
+          ]
+        },
+        {
+          group: 'Academic & Practicals',
+          items: [
+            { to: '/bookings', label: 'Booking Reservations', icon: CalendarCheck },
+            { to: '/issue-return', label: 'Issue & Return Loans', icon: ArrowRightLeft },
+          ]
+        }
+      ];
+    }
+
     const sections = [
       {
         group: 'Overview',
@@ -59,12 +96,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         items: [
           {
             to: '/attendance',
-            label: role === 'student'
-              ? 'My Practical Attendance'
-              : (role === 'technician' || role === 'labManager')
-              ? 'Technical Work Orders'
-              : 'Faculty Attendance',
-            icon: (role === 'technician' || role === 'labManager') ? Wrench : UserCheck
+            label: role === 'student' ? 'My Practical Attendance' : 'Faculty Attendance',
+            icon: UserCheck
           },
           { to: '/bookings', label: 'Booking Reservations', icon: CalendarCheck },
           ...(role !== 'student'
@@ -86,7 +119,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               group: 'Operations & Maintenance',
               items: [
                 { to: '/maintenance', label: 'Maintenance & Calibration', icon: Wrench },
-                ...(role === 'admin' || role === 'labManager' || role === 'technician'
+                ...(role === 'admin'
                   ? [{ to: '/procurement', label: 'Vendor & Procurement', icon: ShoppingCart }]
                   : []),
                 { to: '/safety', label: 'Safety & Incidents', icon: ShieldAlert },
