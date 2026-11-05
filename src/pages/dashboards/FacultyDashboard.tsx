@@ -18,6 +18,7 @@ import { useAuth } from '../../context/AuthContext';
 import { DataService } from '../../services/dataService';
 import { PracticalSession, EquipmentAsset, EquipmentBooking } from '../../types';
 import { ResourceIntelligenceDashboardWidget } from '../../components/ResourceIntelligenceDashboardWidget';
+import { SessionConsoleModal } from '../../components/SessionConsoleModal';
 
 interface FacultyDashboardProps {
   onOpenLiveAvailability: () => void;
@@ -34,36 +35,38 @@ export const FacultyDashboard: React.FC<FacultyDashboardProps> = ({
   const [equipment, setEquipment] = useState<EquipmentAsset[]>([]);
   const [bookings, setBookings] = useState<EquipmentBooking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedSessionForConsole, setSelectedSessionForConsole] = useState<PracticalSession | null>(null);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [allSess, eq, bk] = await Promise.all([
+        DataService.getPracticalSessions(),
+        DataService.getEquipment(activeLab?.id),
+        DataService.getBookings(activeLab?.id)
+      ]);
+
+      const userClean = (currentUser.displayName || '').toLowerCase().replace(/\([^)]*\)/g, '').trim();
+      const facultySessions = allSess.filter(s => {
+        if (s.facultyId && s.facultyId === currentUser.id) return true;
+        const facClean = (s.facultyName || '').toLowerCase();
+        if (facClean.includes(userClean) || userClean.includes(facClean)) return true;
+        const words = userClean.split(/\s+/).filter(w => w.length >= 3 && !['prof', 'dr.', 'mrs.', 'mr.', 'lead', 'system'].includes(w));
+        return words.some(w => facClean.includes(w));
+      });
+
+      const todayClasses = (facultySessions.length > 0 ? facultySessions : allSess).slice(0, 3);
+      setSessions(todayClasses);
+      setEquipment(eq);
+      setBookings(bk);
+    } catch (err) {
+      console.error('Failed to load faculty dashboard:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        const [allSess, eq, bk] = await Promise.all([
-          DataService.getPracticalSessions(),
-          DataService.getEquipment(activeLab?.id),
-          DataService.getBookings(activeLab?.id)
-        ]);
-
-        const userClean = (currentUser.displayName || '').toLowerCase().replace(/\([^)]*\)/g, '').trim();
-        const facultySessions = allSess.filter(s => {
-          if (s.facultyId && s.facultyId === currentUser.id) return true;
-          const facClean = (s.facultyName || '').toLowerCase();
-          if (facClean.includes(userClean) || userClean.includes(facClean)) return true;
-          const words = userClean.split(/\s+/).filter(w => w.length >= 3 && !['prof', 'dr.', 'mrs.', 'mr.', 'lead', 'system'].includes(w));
-          return words.some(w => facClean.includes(w));
-        });
-
-        const todayClasses = (facultySessions.length > 0 ? facultySessions : allSess).slice(0, 3);
-        setSessions(todayClasses);
-        setEquipment(eq);
-        setBookings(bk);
-      } catch (err) {
-        console.error('Failed to load faculty dashboard:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
     loadData();
   }, [activeLab, currentUser]);
 
@@ -220,8 +223,9 @@ export const FacultyDashboard: React.FC<FacultyDashboardProps> = ({
                   {s.attendanceCount || 24} Present
                 </span>
                 <button
-                  onClick={() => alert(`Opening digital session console for ${s.title}`)}
-                  className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center gap-1 shadow-sm"
+                  type="button"
+                  onClick={() => setSelectedSessionForConsole(s)}
+                  className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all hover:shadow hover:scale-[1.02]"
                 >
                   <Play className="w-3.5 h-3.5" />
                   <span>Session Console</span>
@@ -231,6 +235,14 @@ export const FacultyDashboard: React.FC<FacultyDashboardProps> = ({
           ))}
         </div>
       </div>
+
+      {/* Interactive Digital Practical Session Console Modal */}
+      <SessionConsoleModal
+        isOpen={!!selectedSessionForConsole}
+        onClose={() => setSelectedSessionForConsole(null)}
+        session={selectedSessionForConsole}
+        onSessionUpdated={loadData}
+      />
     </div>
   );
 };

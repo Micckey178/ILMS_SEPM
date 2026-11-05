@@ -254,12 +254,11 @@ class LocalStoreManager {
     for (const initSess of INITIAL_PRACTICAL_SESSIONS) {
       map.set(initSess.id, initSess);
     }
-    // 2. Retain any user-scheduled practical sessions
+    // 2. Retain updates to existing sessions and user-scheduled practical sessions
     if (Array.isArray(sessions)) {
       for (const s of sessions) {
-        if (!map.has(s.id)) {
-          map.set(s.id, s);
-        }
+        const existing = map.get(s.id);
+        map.set(s.id, existing ? { ...existing, ...s } : s);
       }
     }
     const merged = Array.from(map.values());
@@ -2006,6 +2005,36 @@ export class DataService {
     });
 
     return newSession;
+  }
+
+  static async updatePracticalSession(
+    sessionId: string,
+    updates: Partial<PracticalSession>,
+    currentUser?: UserProfile
+  ): Promise<PracticalSession | null> {
+    const list = localStore.getPracticalSessions();
+    const idx = list.findIndex(s => s.id === sessionId);
+    if (idx === -1) return null;
+
+    const updated: PracticalSession = {
+      ...list[idx],
+      ...updates
+    };
+    list[idx] = updated;
+    localStore.setPracticalSessions(list);
+
+    if (currentUser) {
+      await this.logAudit({
+        action: 'SESSION_UPDATED',
+        category: 'BOOKING',
+        laboratoryId: updated.laboratoryId,
+        userId: currentUser.id,
+        userName: currentUser.displayName,
+        details: `Updated practical session "${updated.title}" (${updated.courseCode}): Status -> ${updated.status}, Attendance -> ${updated.attendanceCount || 0}`
+      });
+    }
+
+    return updated;
   }
 
   // --- FAULT REPORTING & RESOLUTION TIMELINE ---
