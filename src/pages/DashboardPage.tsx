@@ -23,9 +23,11 @@ import {
   LayoutGrid,
   Activity,
   Layers,
-  Calendar
+  Calendar,
+  Gauge
 } from 'lucide-react';
 import { localStore } from '../services/dataService';
+import { ResourceIntelligencePage } from './ResourceIntelligencePage';
 
 interface DashboardPageProps {
   onOpenQRScanner: () => void;
@@ -35,7 +37,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onOpenQRScanner })
   const { currentUser, activeLab } = useAuth();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState<'workspace' | 'modules'>('workspace');
+  const [activeTab, setActiveTab] = useState<'workspace' | 'intelligence' | 'modules'>('workspace');
   const [isLiveMatrixOpen, setIsLiveMatrixOpen] = useState(false);
   const [isFaultReportOpen, setIsFaultReportOpen] = useState(false);
 
@@ -47,6 +49,16 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onOpenQRScanner })
   const practicalSessionsCount = localStore.getPracticalSessions().length;
 
   const lunaModules = [
+    {
+      id: 'intelligence',
+      title: 'Resource Intelligence',
+      desc: 'Deterministic equipment utilization, workstation cohort deficits, and rule-based optimization proposals.',
+      status: 'Live Analytics & Shortage Engine',
+      badge: 'Resource Optimization',
+      icon: Gauge,
+      path: '/resource-intelligence',
+      accent: 'border-[#8961D8] bg-[#F5EFFF] text-[#8961D8]'
+    },
     {
       id: 'timetable',
       title: 'Department Timetables',
@@ -200,10 +212,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onOpenQRScanner })
         </div>
 
         {/* View Switcher Tabs */}
-        <div className="flex items-center space-x-2 bg-[#FFF8F2] p-1 rounded-2xl border border-[#E9DDF1]">
+        <div className="flex items-center space-x-1.5 bg-[#FFF8F2] p-1 rounded-2xl border border-[#E9DDF1] overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveTab('workspace')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shrink-0 ${
               activeTab === 'workspace'
                 ? 'bg-white text-[#8961D8] shadow-sm border border-[#E9DDF1]'
                 : 'text-[#71667D] hover:text-[#332B40]'
@@ -212,9 +224,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onOpenQRScanner })
             <Activity className="w-3.5 h-3.5" />
             <span>Role Workspace</span>
           </button>
+          {(currentUser.role === 'admin' || currentUser.role === 'faculty') && (
+            <button
+              onClick={() => setActiveTab('intelligence')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shrink-0 ${
+                activeTab === 'intelligence'
+                  ? 'bg-white text-[#8961D8] shadow-sm border border-[#E9DDF1]'
+                  : 'text-[#71667D] hover:text-[#332B40]'
+              }`}
+            >
+              <Gauge className="w-3.5 h-3.5" />
+              <span>Resource Intelligence</span>
+            </button>
+          )}
           <button
             onClick={() => setActiveTab('modules')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shrink-0 ${
               activeTab === 'modules'
                 ? 'bg-white text-[#8961D8] shadow-sm border border-[#E9DDF1]'
                 : 'text-[#71667D] hover:text-[#332B40]'
@@ -226,8 +251,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onOpenQRScanner })
         </div>
       </div>
 
-      {/* VIEW A: FEATURED MODULES (LUNA PORTFOLIO-STYLE PROJECT CARDS) */}
-      {activeTab === 'modules' ? (
+      {/* VIEW CONDITIONAL RENDERING */}
+      {activeTab === 'intelligence' ? (
+        <div className="space-y-6 animate-in fade-in">
+          <ResourceIntelligencePage />
+        </div>
+      ) : activeTab === 'modules' ? (
         <div className="space-y-6 animate-in fade-in">
           <div className="flex items-center justify-between">
             <div>

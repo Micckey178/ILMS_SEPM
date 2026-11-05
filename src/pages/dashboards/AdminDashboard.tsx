@@ -35,6 +35,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { DataService } from '../../services/dataService';
 import { SmartLabHealthScoreCard } from '../../components/SmartLabHealthScoreCard';
+import { ResourceIntelligenceDashboardWidget } from '../../components/ResourceIntelligenceDashboardWidget';
 import {
   Laboratory,
   UniversalInventoryItem,
@@ -338,6 +339,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* Smart Health Score Component */}
       <SmartLabHealthScoreCard score={healthScore} labName="Consolidated University Facilities" />
+
+      {/* Institutional Resource Intelligence Live Matrix */}
+      <ResourceIntelligenceDashboardWidget />
 
       {/* Analytics Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -17,6 +17,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { DataService } from '../../services/dataService';
 import { PracticalSession, EquipmentAsset, EquipmentBooking } from '../../types';
+import { ResourceIntelligenceDashboardWidget } from '../../components/ResourceIntelligenceDashboardWidget';
 
 interface FacultyDashboardProps {
   onOpenLiveAvailability: () => void;
@@ -156,6 +157,9 @@ export const FacultyDashboard: React.FC<FacultyDashboardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Department Resource Intelligence & Equipment Availability Matrix */}
+      <ResourceIntelligenceDashboardWidget />
 
       {/* Practical Sessions Workspace */}
       <div className="p-6 bg-white dark:bg-slate-900 border border-border dark:border-slate-800 rounded-3xl shadow-card">
