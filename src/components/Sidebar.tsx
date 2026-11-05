@@ -44,15 +44,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           { to: '/schedule', label: 'Department Timetables & Schedule', icon: Calendar },
         ]
       },
-      ...(role === 'admin' || role === 'faculty'
+      ...(role === 'admin'
         ? [
             {
-              group: 'Institutional Intelligence',
+              group: 'Institutional Operations',
               items: [
-                ...(role === 'admin'
-                  ? [{ to: '/command-centre', label: 'ILMS Command Centre', icon: Activity }]
-                  : []),
-                { to: '/resource-intelligence', label: 'Resource Intelligence', icon: Gauge }
+                { to: '/command-centre', label: 'ILMS Command Centre', icon: Activity }
               ]
             }
           ]

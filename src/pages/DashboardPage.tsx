@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { AdminDashboard } from './dashboards/AdminDashboard';
 import { LabManagerDashboard } from './dashboards/LabManagerDashboard';
@@ -36,10 +36,25 @@ interface DashboardPageProps {
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onOpenQRScanner }) => {
   const { currentUser, activeLab } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get('tab');
 
-  const [activeTab, setActiveTab] = useState<'workspace' | 'intelligence' | 'modules'>('workspace');
+  const [activeTab, setActiveTab] = useState<'workspace' | 'intelligence' | 'modules'>(
+    urlTab === 'intelligence' || urlTab === 'modules' ? urlTab : 'workspace'
+  );
   const [isLiveMatrixOpen, setIsLiveMatrixOpen] = useState(false);
   const [isFaultReportOpen, setIsFaultReportOpen] = useState(false);
+
+  useEffect(() => {
+    if (urlTab === 'intelligence' || urlTab === 'modules' || urlTab === 'workspace') {
+      setActiveTab(urlTab);
+    }
+  }, [urlTab]);
+
+  const handleTabChange = (tab: 'workspace' | 'intelligence' | 'modules') => {
+    setActiveTab(tab);
+    setSearchParams(tab === 'workspace' ? {} : { tab });
+  };
 
   // Live counts
   const inventoryCount = localStore.getInventory().length;
@@ -56,7 +71,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onOpenQRScanner })
       status: 'Live Analytics & Shortage Engine',
       badge: 'Resource Optimization',
       icon: Gauge,
-      path: '/resource-intelligence',
+      path: '/?tab=intelligence',
       accent: 'border-[#8961D8] bg-[#F5EFFF] text-[#8961D8]'
     },
     {
@@ -214,7 +229,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onOpenQRScanner })
         {/* View Switcher Tabs */}
         <div className="flex items-center space-x-1.5 bg-[#FFF8F2] p-1 rounded-2xl border border-[#E9DDF1] overflow-x-auto no-scrollbar">
           <button
-            onClick={() => setActiveTab('workspace')}
+            onClick={() => handleTabChange('workspace')}
             className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shrink-0 ${
               activeTab === 'workspace'
                 ? 'bg-white text-[#8961D8] shadow-sm border border-[#E9DDF1]'
@@ -226,7 +241,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onOpenQRScanner })
           </button>
           {(currentUser.role === 'admin' || currentUser.role === 'faculty') && (
             <button
-              onClick={() => setActiveTab('intelligence')}
+              onClick={() => handleTabChange('intelligence')}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shrink-0 ${
                 activeTab === 'intelligence'
                   ? 'bg-white text-[#8961D8] shadow-sm border border-[#E9DDF1]'
@@ -238,7 +253,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onOpenQRScanner })
             </button>
           )}
           <button
-            onClick={() => setActiveTab('modules')}
+            onClick={() => handleTabChange('modules')}
             className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shrink-0 ${
               activeTab === 'modules'
                 ? 'bg-white text-[#8961D8] shadow-sm border border-[#E9DDF1]'

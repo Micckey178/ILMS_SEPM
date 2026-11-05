@@ -146,11 +146,11 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
       ? [
           {
             title: 'Resource Intelligence',
-            desc: 'Deterministic utilization analytics and deficit reports',
+            desc: 'Deterministic utilization analytics and deficit reports in Dashboard',
             icon: Gauge,
             action: () => {
               onClose();
-              navigate('/resource-intelligence');
+              navigate('/?tab=intelligence');
             }
           }
         ]

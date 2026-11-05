@@ -121,7 +121,7 @@ const AppLayout: React.FC = () => {
             <Route path="/users" element={<UserManagementPage />} />
             <Route path="/command-centre" element={<CommandCentrePage />} />
             <Route path="/command-center" element={<CommandCentrePage />} />
-            <Route path="/resource-intelligence" element={<ResourceIntelligencePage />} />
+            <Route path="/resource-intelligence" element={<Navigate to="/?tab=intelligence" replace />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

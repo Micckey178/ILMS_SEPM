@@ -160,7 +160,7 @@ export const ResourceIntelligenceDashboardWidget: React.FC<ResourceIntelligenceD
         </div>
 
         <button
-          onClick={() => navigate('/resource-intelligence')}
+          onClick={() => navigate('/?tab=intelligence')}
           className="px-4 py-2 rounded-2xl bg-[#FFF8F2] hover:bg-[#FAF5FF] border border-[#E9DDF1] text-xs font-bold text-[#8961D8] flex items-center space-x-1.5 shadow-sm transition shrink-0 group"
         >
           <span>Open Full Intelligence Portal</span>
@@ -179,7 +179,7 @@ export const ResourceIntelligenceDashboardWidget: React.FC<ResourceIntelligenceD
       {/* 4 Interactive KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div
-          onClick={() => navigate('/resource-intelligence')}
+          onClick={() => navigate('/?tab=intelligence')}
           className="p-4 rounded-2xl bg-[#FAF5FF] border border-[#E9DDF1] cursor-pointer hover:border-[#8961D8] transition"
         >
           <div className="flex items-center justify-between text-[#71667D] text-[10px] font-bold uppercase tracking-wider">
@@ -198,7 +198,7 @@ export const ResourceIntelligenceDashboardWidget: React.FC<ResourceIntelligenceD
         </div>
 
         <div
-          onClick={() => navigate('/resource-intelligence')}
+          onClick={() => navigate('/?tab=intelligence')}
           className="p-4 rounded-2xl bg-[#FFF8F2] border border-[#E9DDF1] cursor-pointer hover:border-amber-300 transition"
         >
           <div className="flex items-center justify-between text-[#71667D] text-[10px] font-bold uppercase tracking-wider">
@@ -212,7 +212,7 @@ export const ResourceIntelligenceDashboardWidget: React.FC<ResourceIntelligenceD
         </div>
 
         <div
-          onClick={() => navigate('/resource-intelligence')}
+          onClick={() => navigate('/?tab=intelligence')}
           className="p-4 rounded-2xl bg-white border border-[#E9DDF1] cursor-pointer hover:border-rose-300 transition"
         >
           <div className="flex items-center justify-between text-[#71667D] text-[10px] font-bold uppercase tracking-wider">
@@ -228,7 +228,7 @@ export const ResourceIntelligenceDashboardWidget: React.FC<ResourceIntelligenceD
         </div>
 
         <div
-          onClick={() => navigate('/resource-intelligence')}
+          onClick={() => navigate('/?tab=intelligence')}
           className="p-4 rounded-2xl bg-white border border-[#E9DDF1] cursor-pointer hover:border-[#8961D8] transition"
         >
           <div className="flex items-center justify-between text-[#71667D] text-[10px] font-bold uppercase tracking-wider">
@@ -259,7 +259,7 @@ export const ResourceIntelligenceDashboardWidget: React.FC<ResourceIntelligenceD
             </div>
           </div>
           <button
-            onClick={() => navigate('/resource-intelligence')}
+            onClick={() => navigate('/?tab=intelligence')}
             className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shrink-0 shadow-sm transition"
           >
             Review Shortage
