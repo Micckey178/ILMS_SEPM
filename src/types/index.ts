@@ -116,7 +116,7 @@ export interface StockMovement {
   timestamp: string;
 }
 
-export type EquipmentStatus = 'AVAILABLE' | 'IN_USE' | 'RESERVED' | 'UNDER_MAINTENANCE' | 'MAINTENANCE_BLOCKED' | 'CALIBRATION_OVERDUE' | 'OUT_OF_SERVICE';
+export type EquipmentStatus = 'AVAILABLE' | 'IN_USE' | 'RESERVED' | 'UNDER_MAINTENANCE' | 'MAINTENANCE_BLOCKED' | 'CALIBRATION_OVERDUE' | 'OUT_OF_SERVICE' | 'FAULTY' | 'DECOMMISSIONED';
 
 export interface EquipmentAsset {
   id: string;
@@ -486,4 +486,115 @@ export interface TechnicianWorkLog {
   costRupees: number;
 }
 
+export interface InstitutionalAlert {
+  id: string;
+  title: string;
+  description: string;
+  priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  category: 'EQUIPMENT_FAULT' | 'OVERDUE_RETURN' | 'MAINTENANCE_DUE' | 'CALIBRATION_DUE' | 'LOW_STOCK' | 'EXPIRING_STOCK' | 'PENDING_APPROVAL' | 'SAFETY_INCIDENT';
+  laboratoryId: string;
+  laboratoryName: string;
+  departmentId: string;
+  departmentName: string;
+  timestamp: string;
+  recordId: string;
+  actionUrl: string;
+  actionLabel: string;
+  acknowledged?: boolean;
+}
 
+export interface DepartmentSummary {
+  id: string;
+  departmentId?: string;
+  name: string;
+  code: string;
+  laboratoriesCount: number;
+  totalLaboratories?: number;
+  totalEquipment: number;
+  operationalEquipment: number;
+  equipmentRequiringMaintenance: number;
+  maintenanceRequired?: number;
+  activeSessions: number;
+  resourceUtilizationRate: number; // 0 to 100%
+  resourceUtilizationPct?: number;
+  pendingRequestsCount: number;
+  totalMaintenanceExpenditure: number; // in ₹
+  estimatedMaintenanceCost?: number;
+}
+
+export interface EquipmentUtilizationMetric {
+  equipmentId: string;
+  equipmentName: string;
+  assetTag: string;
+  laboratoryId: string;
+  laboratoryName: string;
+  departmentId: string;
+  departmentName: string;
+  totalUsageHours: number;
+  operatingDurationHours: number;
+  utilizationPercentage: number;
+  downtimeHours: number;
+  lastUsedDate: string;
+  condition: 'WORKING' | 'FAULTY' | 'UNDER_MAINTENANCE' | 'CALIBRATING';
+  utilizationCategory: 'HIGH' | 'MODERATE' | 'UNDERUTILIZED' | 'UNUSED' | 'UNAVAILABLE';
+}
+
+export interface ResourceShortage {
+  id: string;
+  departmentId: string;
+  departmentName: string;
+  laboratoryId: string;
+  laboratoryName: string;
+  equipmentCategory: string;
+  requiredQuantity: number;
+  availableOperationalQuantity: number;
+  shortageQuantity: number;
+  supportingData: string;
+  suggestedAction: string;
+  severity: 'CRITICAL' | 'HIGH' | 'MODERATE';
+}
+
+export interface ResourceRecommendation {
+  id: string;
+  type: 'TRANSFER' | 'MAINTENANCE' | 'PROCUREMENT' | 'STOCK_REPLENISHMENT' | 'CAPACITY_REVIEW';
+  title: string;
+  reason: string;
+  supportingData: string;
+  affectedDepartment: string;
+  affectedLaboratory: string;
+  expectedOperationalBenefit: string;
+  suggestedAction: string;
+  status: 'PENDING' | 'APPROVED' | 'DISMISSED';
+  createdAt: string;
+  actionPayload?: Record<string, any>;
+}
+
+export interface CommandCentreKPIs {
+  totalLaboratories: number;
+  operationalLaboratories: number;
+  laboratoriesRequiringAttention: number;
+  totalRegisteredEquipment: number;
+  workingEquipment: number;
+  nonOperationalEquipment: number;
+  totalDepartments: number;
+  activeSessions: number;
+  pendingApprovals: number;
+  activeReservations: number;
+  openMaintenanceRequests: number;
+  lowStockAlerts: number;
+}
+
+export interface CapacityMetric {
+  laboratoryId: string;
+  laboratoryName: string;
+  code: string;
+  building: string;
+  roomNumber: string;
+  registeredCapacity: number;
+  scheduledStudentCount: number;
+  checkedInStudentCount: number;
+  remainingCapacity: number;
+  capacityUtilizationPct: number;
+  peakPeriod: string;
+  occupancyTrend: 'INCREASING' | 'STABLE' | 'DECREASING';
+}

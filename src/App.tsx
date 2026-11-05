@@ -22,6 +22,8 @@ import { LaboratoriesPage } from './pages/LaboratoriesPage';
 import { AttendancePage } from './pages/AttendancePage';
 import { UserManagementPage } from './pages/UserManagementPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { CommandCentrePage } from './pages/CommandCentrePage';
+import { ResourceIntelligencePage } from './pages/ResourceIntelligencePage';
 import { LoginPage } from './pages/LoginPage';
 import { WelcomePage } from './pages/WelcomePage';
 import { LabAssistantBot } from './components/LabAssistantBot';
@@ -117,6 +119,9 @@ const AppLayout: React.FC = () => {
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/laboratories" element={<LaboratoriesPage />} />
             <Route path="/users" element={<UserManagementPage />} />
+            <Route path="/command-centre" element={<CommandCentrePage />} />
+            <Route path="/command-center" element={<CommandCentrePage />} />
+            <Route path="/resource-intelligence" element={<ResourceIntelligencePage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

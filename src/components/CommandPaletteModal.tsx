@@ -12,7 +12,9 @@ import {
   Command,
   X,
   PlusCircle,
-  QrCode
+  QrCode,
+  Activity,
+  Gauge
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -126,7 +128,33 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         onClose();
         navigate('/inventory');
       }
-    }
+    },
+    ...(currentUser.role === 'admin'
+      ? [
+          {
+            title: 'ILMS Command Centre',
+            desc: 'Centralized institutional monitoring and KPI dashboard',
+            icon: Activity,
+            action: () => {
+              onClose();
+              navigate('/command-centre');
+            }
+          }
+        ]
+      : []),
+    ...(currentUser.role === 'admin' || currentUser.role === 'faculty'
+      ? [
+          {
+            title: 'Resource Intelligence',
+            desc: 'Deterministic utilization analytics and deficit reports',
+            icon: Gauge,
+            action: () => {
+              onClose();
+              navigate('/resource-intelligence');
+            }
+          }
+        ]
+      : [])
   ];
 
   return (

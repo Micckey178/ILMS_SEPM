@@ -18,7 +18,9 @@ import {
   Sparkles,
   BookOpen,
   UserCheck,
-  Users
+  Users,
+  Activity,
+  Gauge
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -42,6 +44,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           { to: '/schedule', label: 'Department Timetables & Schedule', icon: Calendar },
         ]
       },
+      ...(role === 'admin' || role === 'faculty'
+        ? [
+            {
+              group: 'Institutional Intelligence',
+              items: [
+                ...(role === 'admin'
+                  ? [{ to: '/command-centre', label: 'ILMS Command Centre', icon: Activity }]
+                  : []),
+                { to: '/resource-intelligence', label: 'Resource Intelligence', icon: Gauge }
+              ]
+            }
+          ]
+        : []),
       {
         group: 'Academic & Practicals',
         items: [
