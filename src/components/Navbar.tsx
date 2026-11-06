@@ -28,6 +28,7 @@ import { usePWA } from '../hooks/usePWA';
 import { InAppNotification, Laboratory } from '../types';
 import { DataService, CloudSyncStatus } from '../services/dataService';
 import { FirebaseSyncModal } from './FirebaseSyncModal';
+import { triggerAppSplash } from './AppSplashAnimation';
 
 interface NavbarProps {
   onToggleSidebar: () => void;
@@ -129,19 +130,29 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Menu className="w-5 h-5" />
           </button>
 
-          {/* Brand Logo with Lavender-Peach Gradient */}
-          <div className="flex items-center space-x-1.5 sm:space-x-2.5 cursor-pointer" onClick={() => navigate('/')}>
-            <img
-              src="/app-logo-v2.png"
-              alt="ILMS Logo"
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl object-contain shadow-xs hover:scale-105 transition-transform"
-            />
+          {/* Brand Logo with Lavender-Peach Gradient & Interactive Pop */}
+          <div
+            className="flex items-center space-x-1.5 sm:space-x-2.5 cursor-pointer group/brand"
+            onClick={() => {
+              triggerAppSplash('welcome-back');
+              navigate('/');
+            }}
+            title="ILMS Lab OS — Click to trigger system splash"
+          >
+            <div className="relative">
+              <div className="absolute -inset-1 rounded-xl bg-gradient-to-tr from-cyan-400 via-purple-400 to-pink-400 opacity-0 group-hover/brand:opacity-80 blur-xs transition-all duration-300 group-hover/brand:scale-125" />
+              <img
+                src="/app-logo-v2.png"
+                alt="ILMS Logo"
+                className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-xl object-contain shadow-xs transition-all duration-300 ease-out group-hover/brand:scale-120 group-hover/brand:-rotate-6 group-active/brand:scale-95"
+              />
+            </div>
             <div className="hidden sm:block">
               <div className="flex items-center space-x-1.5">
-                <span className="font-heading font-black text-base text-[#332B40] tracking-tight">
+                <span className="font-heading font-black text-base text-[#332B40] tracking-tight group-hover/brand:text-[#8961D8] transition-colors">
                   ILMS
                 </span>
-                <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-[#F0E9FF] text-[#8961D8] border border-[#BCA0F5]/40">
+                <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-[#F0E9FF] text-[#8961D8] border border-[#BCA0F5]/40 group-hover/brand:bg-[#8961D8] group-hover/brand:text-white transition-colors">
                   Lab OS
                 </span>
               </div>

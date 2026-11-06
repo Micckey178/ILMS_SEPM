@@ -140,6 +140,31 @@ const INITIAL_BUBBLES: BubbleParticle[] = Array.from({ length: 16 }, (_, i) => (
   delay: Math.random() * 1.5,
 }));
 
+// Cyber burst sparks that shoot radially outward when the logo pops out of nowhere
+interface BurstSpark {
+  id: number;
+  x: number;
+  y: number;
+  color: string;
+  size: number;
+  delay: number;
+}
+
+const BURST_SPARKS: BurstSpark[] = Array.from({ length: 16 }, (_, i) => {
+  const angle = (i * 360) / 16 + (i % 2 === 0 ? 5 : -5);
+  const rad = (angle * Math.PI) / 180;
+  const dist = 95 + (i % 3) * 35; // 95px, 130px, 165px
+  const colors = ['#38BDF8', '#BCA0F5', '#F472B6', '#FDE047', '#34D399', '#C084FC'];
+  return {
+    id: i,
+    x: Math.round(Math.cos(rad) * dist),
+    y: Math.round(Math.sin(rad) * dist),
+    color: colors[i % colors.length],
+    size: 4 + (i % 3) * 2.5,
+    delay: (i % 4) * 0.02,
+  };
+});
+
 // Thresholds for detecting returning user:
 // 45 seconds of tab hiding or 3 minutes of inactive time
 const AWAY_THRESHOLD_MS = 45 * 1000;
@@ -151,6 +176,7 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
   const [isVisible, setIsVisible] = useState(true);
   const [isFadingOut, setIsFadingOut] = useState(false);
   const [splashMode, setSplashMode] = useState<'launch' | 'welcome-back'>('launch');
+  const [animKey, setAnimKey] = useState(0);
   const [progress, setProgress] = useState(16);
   const [statusText, setStatusText] = useState('Initializing Laboratory Operating System...');
   const [activeStage, setActiveStage] = useState(0);
@@ -173,6 +199,7 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
       setSplashMode(mode);
       setIsVisible(true);
       setIsFadingOut(false);
+      setAnimKey((prev) => prev + 1);
       setProgress(18);
       setActiveStage(0);
 
@@ -458,69 +485,118 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
           willChange: 'transform, opacity, filter',
         }}
       >
-        {/* Animated App Logo Wrapper with INSTANT Burst & Float */}
-        <div
-          className="relative group mb-6 ilms-pop-in-box"
-          style={{
-            transform: `perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
-            transition: 'transform 0.15s ease-out',
-          }}
-        >
-          {/* Outer Pulsing Neon Aura */}
-          <div className="absolute -inset-5 rounded-[44px] bg-gradient-to-r from-purple-500 via-[#8961D8] to-cyan-400 opacity-60 blur-2xl animate-pulse" />
+        {/* Animated App Logo Stage with Quantum Pop-Out-Of-Nowhere */}
+        <div key={animKey} className="relative mb-6 flex items-center justify-center">
+          {/* A. Quantum Singularity Flash (Explodes from zero into white-hot neon aura) */}
+          <div className="absolute top-1/2 left-1/2 rounded-full pointer-events-none ilms-singularity-flash" />
 
-          {/* Luminous Orbital Particle Ring (Clockwise) */}
-          <div
-            className="absolute -inset-7 rounded-full border-2 border-dashed border-purple-400/40 border-t-cyan-300 border-r-pink-400 pointer-events-none animate-spin"
-            style={{ animationDuration: '4.5s', animationTimingFunction: 'linear' }}
-          >
-            <div className="w-3 h-3 rounded-full bg-cyan-300 shadow-[0_0_14px_#38bdf8] absolute top-1 left-1/2 -translate-x-1/2" />
+          {/* B. Hexagonal Quantum Shockwave Ring matching the new isometric badge geometry */}
+          <div className="absolute top-1/2 left-1/2 pointer-events-none w-48 h-48 sm:w-56 sm:h-56 ilms-hex-shockwave">
+            <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_16px_#38bdf8]">
+              <polygon
+                points="50,3 93,26 93,74 50,97 7,74 7,26"
+                fill="none"
+                stroke="url(#hexShockGrad)"
+                strokeWidth="2.5"
+                strokeDasharray="6 3"
+              />
+              <defs>
+                <linearGradient id="hexShockGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#38BDF8" />
+                  <stop offset="50%" stopColor="#BCA0F5" />
+                  <stop offset="100%" stopColor="#F472B6" />
+                </linearGradient>
+              </defs>
+            </svg>
           </div>
 
-          {/* Secondary Reverse Orbital Ring (Counter-Clockwise) */}
-          <div
-            className="absolute -inset-10 rounded-full border border-purple-300/25 border-b-cyan-400/50 pointer-events-none animate-spin"
-            style={{ animationDuration: '8.5s', animationDirection: 'reverse' }}
-          >
-            <div className="w-2.5 h-2.5 rounded-full bg-pink-400 shadow-[0_0_12px_#f472b6] absolute bottom-1 right-1/4" />
-          </div>
+          {/* C. Dual Concentric Ripple Shockwaves */}
+          <div className="absolute top-1/2 left-1/2 rounded-full border-2 border-cyan-400/80 pointer-events-none ilms-shockwave-ring" />
+          <div className="absolute top-1/2 left-1/2 rounded-full border border-purple-400/60 pointer-events-none ilms-shockwave-ring-delayed" />
 
-          {/* Main App Logo Card with 3D Float, Shimmer & Laser Scan */}
+          {/* D. Starburst Flying Cyber Sparks Erupting Radially */}
+          {BURST_SPARKS.map((spark) => (
+            <div
+              key={spark.id}
+              className="absolute top-1/2 left-1/2 rounded-full pointer-events-none ilms-burst-spark"
+              style={{
+                '--tx': `${spark.x}px`,
+                '--ty': `${spark.y}px`,
+                '--spark-color': spark.color,
+                width: `${spark.size}px`,
+                height: `${spark.size}px`,
+                animationDelay: `${spark.delay}s`,
+              } as React.CSSProperties}
+            />
+          ))}
+
+          {/* E. 3D Tilt Wrapper */}
           <div
-            className="relative w-40 h-40 sm:w-48 sm:h-48 rounded-[38px] bg-gradient-to-br from-white/95 via-purple-50/90 to-purple-100/80 p-2.5 shadow-[0_25px_60px_rgba(137,97,216,0.45)] border-2 border-white/80 backdrop-blur-md overflow-hidden transform transition-all duration-300 hover:scale-105"
+            className="relative group cursor-pointer"
             style={{
-              animation: 'ilms-float 3s ease-in-out infinite',
+              transform: `perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
+              transition: 'transform 0.15s ease-out',
             }}
+            onClick={(e) => {
+              e.stopPropagation();
+              soundEngine.playPopIn();
+              setAnimKey((k) => k + 1);
+            }}
+            title="Click to re-pop logo"
           >
-            {/* Logo Image — Preloaded for Immediate Display */}
-            <img
-              src="/app-logo-v2.png"
-              alt="ILMS App Logo"
-              loading="eager"
-              decoding="sync"
-              className="w-full h-full object-contain drop-shadow-lg rounded-[30px]"
-            />
+            {/* Outer Pulsing Neon Aura */}
+            <div className="absolute -inset-5 rounded-[44px] bg-gradient-to-r from-purple-500 via-[#8961D8] to-cyan-400 opacity-60 blur-2xl animate-pulse" />
 
-            {/* Diagonal Light Shimmer Sweep */}
+            {/* Luminous Orbital Particle Ring (Clockwise) */}
             <div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent -translate-x-full pointer-events-none"
-              style={{
-                animation: 'ilms-shimmer 2.2s infinite ease-in-out',
-              }}
-            />
+              className="absolute -inset-7 rounded-full border-2 border-dashed border-purple-400/40 border-t-cyan-300 border-r-pink-400 pointer-events-none animate-spin"
+              style={{ animationDuration: '4.5s', animationTimingFunction: 'linear' }}
+            >
+              <div className="w-3 h-3 rounded-full bg-cyan-300 shadow-[0_0_14px_#38bdf8] absolute top-1 left-1/2 -translate-x-1/2" />
+            </div>
 
-            {/* High-Tech Cyan Scanline Laser */}
+            {/* Secondary Reverse Orbital Ring (Counter-Clockwise) */}
             <div
-              className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_8px_#38bdf8] pointer-events-none"
-              style={{
-                animation: 'ilms-laser-scan 2.6s infinite ease-in-out',
-              }}
-            />
+              className="absolute -inset-10 rounded-full border border-purple-300/25 border-b-cyan-400/50 pointer-events-none animate-spin"
+              style={{ animationDuration: '8.5s', animationDirection: 'reverse' }}
+            >
+              <div className="w-2.5 h-2.5 rounded-full bg-pink-400 shadow-[0_0_12px_#f472b6] absolute bottom-1 right-1/4" />
+            </div>
+
+            {/* Main App Logo Card with Quantum Pop-Out-Of-Nowhere, 3D Float, Shimmer & Laser Scan */}
+            <div
+              className="relative w-40 h-40 sm:w-48 sm:h-48 rounded-[38px] bg-gradient-to-br from-white/95 via-purple-50/90 to-purple-100/80 p-2.5 shadow-[0_25px_60px_rgba(137,97,216,0.45)] border-2 border-white/80 backdrop-blur-md overflow-hidden ilms-pop-nowhere hover:scale-105 active:scale-95 transition-all duration-300"
+            >
+              {/* Logo Image — Preloaded for Immediate Display */}
+              <img
+                src="/app-logo-v2.png"
+                alt="ILMS App Logo"
+                loading="eager"
+                decoding="sync"
+                className="w-full h-full object-contain drop-shadow-lg rounded-[30px]"
+              />
+
+              {/* Diagonal Light Shimmer Sweep */}
+              <div
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/70 to-transparent pointer-events-none"
+                style={{
+                  animation: 'ilms-shimmer 2.2s infinite ease-in-out',
+                }}
+              />
+
+              {/* High-Tech Cyan Scanline Laser */}
+              <div
+                className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_8px_#38bdf8] pointer-events-none"
+                style={{
+                  animation: 'ilms-laser-scan 2.6s infinite ease-in-out',
+                }}
+              />
+            </div>
+
+            {/* Sparkle Twinkles */}
+            <Sparkles className="w-7 h-7 text-yellow-300 absolute -top-4 -right-4 animate-bounce shadow-sm drop-shadow-[0_0_12px_rgba(253,224,71,0.95)]" />
+            <Sparkles className="w-5 h-5 text-cyan-300 absolute -bottom-3 -left-3 animate-pulse drop-shadow-[0_0_10px_rgba(56,189,248,0.85)]" />
           </div>
-
-          {/* Sparkle Twinkles */}
-          <Sparkles className="w-7 h-7 text-yellow-300 absolute -top-4 -right-4 animate-bounce shadow-sm drop-shadow-[0_0_12px_rgba(253,224,71,0.95)]" />
-          <Sparkles className="w-5 h-5 text-cyan-300 absolute -bottom-3 -left-3 animate-pulse drop-shadow-[0_0_10px_rgba(56,189,248,0.85)]" />
         </div>
 
         {/* Brand Title with Glowing Gradient */}
@@ -612,44 +688,147 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
 
       {/* Embedded Animation Styles */}
       <style>{`
-        /* Instant Burst Pop-In with zero initial delay */
-        .ilms-pop-in-box {
-          animation: ilms-instant-pop 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        /* 1. Singularity Flash (White-hot quantum flare bursting at t=0) */
+        .ilms-singularity-flash {
+          animation: ilms-singularity-anim 0.65s cubic-bezier(0.12, 0.8, 0.32, 1) forwards;
         }
 
-        @keyframes ilms-instant-pop {
+        @keyframes ilms-singularity-anim {
           0% {
-            transform: scale(0.8) translateY(12px);
-            opacity: 0.95;
-            filter: blur(4px);
-          }
-          65% {
-            transform: scale(1.08) translateY(-4px);
+            width: 0px;
+            height: 0px;
+            transform: translate(-50%, -50%) scale(0.1);
             opacity: 1;
-            filter: blur(0px);
+            background: radial-gradient(circle, #ffffff 0%, #38bdf8 50%, #8961D8 100%);
+            box-shadow: 0 0 35px #ffffff, 0 0 70px #38bdf8, 0 0 130px #8961D8;
+          }
+          20% {
+            width: 200px;
+            height: 200px;
+            transform: translate(-50%, -50%) scale(1.6);
+            opacity: 0.95;
+            background: radial-gradient(circle, #ffffff 15%, #38bdf8 65%, transparent 100%);
+            box-shadow: 0 0 80px #ffffff, 0 0 150px #38bdf8, 0 0 220px #8961D8;
+          }
+          60% {
+            width: 380px;
+            height: 380px;
+            transform: translate(-50%, -50%) scale(2.4);
+            opacity: 0.35;
           }
           100% {
-            transform: scale(1) translateY(0px);
-            opacity: 1;
-            filter: blur(0px);
+            width: 520px;
+            height: 520px;
+            transform: translate(-50%, -50%) scale(3.2);
+            opacity: 0;
+            box-shadow: none;
           }
         }
 
-        /* Shockwave expanding ring */
+        /* 2. Quantum Pop-Out-Of-Nowhere Animation */
+        .ilms-pop-nowhere {
+          animation:
+            ilms-pop-out-of-nowhere 0.78s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards,
+            ilms-float 3.6s ease-in-out 0.78s infinite;
+        }
+
+        @keyframes ilms-pop-out-of-nowhere {
+          0% {
+            transform: scale3d(0, 0, 0) translateY(55px) rotate(-24deg);
+            opacity: 0;
+            filter: blur(28px) brightness(3.5);
+          }
+          32% {
+            opacity: 1;
+            filter: blur(6px) brightness(2);
+          }
+          64% {
+            transform: scale3d(1.28, 1.28, 1) translateY(-14px) rotate(4.5deg);
+            opacity: 1;
+            filter: blur(0px) brightness(1.25);
+          }
+          78% {
+            transform: scale3d(0.92, 0.92, 1) translateY(5px) rotate(-1.5deg);
+            filter: brightness(1);
+          }
+          88% {
+            transform: scale3d(1.06, 1.06, 1) translateY(-2px) rotate(0.8deg);
+          }
+          95% {
+            transform: scale3d(0.98, 0.98, 1) translateY(1px) rotate(-0.3deg);
+          }
+          100% {
+            transform: scale3d(1, 1, 1) translateY(0px) rotate(0deg);
+            opacity: 1;
+            filter: blur(0px) brightness(1);
+          }
+        }
+
+        /* 3. Hexagonal Quantum Shockwave */
+        .ilms-hex-shockwave {
+          animation: ilms-hex-anim 0.95s cubic-bezier(0.1, 0.85, 0.25, 1) forwards;
+        }
+
+        @keyframes ilms-hex-anim {
+          0% {
+            transform: translate(-50%, -50%) scale(0.12) rotate(0deg);
+            opacity: 0;
+          }
+          20% {
+            opacity: 1;
+          }
+          100% {
+            transform: translate(-50%, -50%) scale(2.4) rotate(28deg);
+            opacity: 0;
+          }
+        }
+
+        /* 4. Radial Cyber Burst Sparks */
+        .ilms-burst-spark {
+          background: var(--spark-color, #38bdf8);
+          box-shadow: 0 0 10px var(--spark-color, #38bdf8), 0 0 20px var(--spark-color, #38bdf8);
+          animation: ilms-spark-shoot 0.82s cubic-bezier(0.15, 0.85, 0.35, 1.2) forwards;
+        }
+
+        @keyframes ilms-spark-shoot {
+          0% {
+            transform: translate(-50%, -50%) translate(0, 0) scale(0);
+            opacity: 0;
+          }
+          22% {
+            opacity: 1;
+            transform: translate(-50%, -50%) translate(calc(var(--tx) * 0.38), calc(var(--ty) * 0.38)) scale(1.6);
+          }
+          75% {
+            opacity: 0.85;
+          }
+          100% {
+            transform: translate(-50%, -50%) translate(var(--tx), var(--ty)) scale(0);
+            opacity: 0;
+          }
+        }
+
+        /* 5. Concentric Shockwave Rings */
         .ilms-shockwave-ring {
-          animation: ilms-shockwave-anim 1s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+          animation: ilms-shockwave-anim 0.95s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+        }
+
+        .ilms-shockwave-ring-delayed {
+          animation: ilms-shockwave-anim 1.15s cubic-bezier(0.1, 0.8, 0.3, 1) 0.08s forwards;
         }
 
         @keyframes ilms-shockwave-anim {
           0% {
-            width: 40px;
-            height: 40px;
+            width: 30px;
+            height: 30px;
+            transform: translate(-50%, -50%);
             opacity: 1;
             box-shadow: 0 0 35px #8961D8;
           }
           100% {
             width: 580px;
             height: 580px;
+            transform: translate(-50%, -50%);
             opacity: 0;
             box-shadow: 0 0 70px #38bdf8;
           }
