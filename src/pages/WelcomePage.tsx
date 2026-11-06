@@ -45,6 +45,7 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'fire
 import { doc, setDoc } from 'firebase/firestore';
 import { usePWA } from '../hooks/usePWA';
 import { QRCodeSVG } from 'qrcode.react';
+import { triggerAppSplash } from '../components/AppSplashAnimation';
 
 declare const __LOCAL_LAN_IP__: string | undefined;
 
@@ -128,8 +129,8 @@ export const WelcomePage: React.FC = () => {
   const handleInstallClick = async () => {
     setInstallStatus(null);
     if (isInstalled) {
-      setInstallStatus('ILMS is already installed on your computer! Click the [ ⧉↗ ] icon in your address bar (right next to the star ★ at the top of your screen) or double-click "ILMS Laboratory System" on your Desktop to open it.');
-      setIsInstallModalOpen(true);
+      triggerAppSplash();
+      navigate('/');
       return;
     }
     const res = await promptInstall();
@@ -199,6 +200,7 @@ export const WelcomePage: React.FC = () => {
           if (matched) {
             await switchUser(matched.id);
             setIsAuthModalOpen(false);
+            triggerAppSplash();
             navigate('/');
             return;
           }
@@ -212,6 +214,7 @@ export const WelcomePage: React.FC = () => {
       if (found) {
         await switchUser(found.id);
         setIsAuthModalOpen(false);
+        triggerAppSplash();
         navigate('/');
         return;
       }
@@ -339,6 +342,7 @@ export const WelcomePage: React.FC = () => {
       setSuccessMsg('Account created and registered in Firebase successfully! Redirecting...');
       setTimeout(() => {
         setIsAuthModalOpen(false);
+        triggerAppSplash();
         navigate('/');
       }, 500);
     } catch (err: any) {
@@ -411,8 +415,13 @@ export const WelcomePage: React.FC = () => {
       {/* 1. LUNA TOP NAVIGATION — FLUID & 100% VISIBLE ON MOBILE */}
       <header className="relative sm:sticky top-0 z-30 bg-[#FFF8F2]/95 backdrop-blur-md border-b border-[#E9DDF1] px-3 sm:px-8 py-3 sm:py-4 w-full">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
-          {/* Logo & University Brand */}
-          <div className="flex items-center space-x-2 sm:space-x-3 cursor-pointer shrink-0 min-w-0" onClick={() => navigate('/')}>
+          <div
+            className="flex items-center space-x-2 sm:space-x-3 cursor-pointer shrink-0 min-w-0"
+            onClick={() => {
+              triggerAppSplash();
+              navigate('/');
+            }}
+          >
             <img
               src="/logo.png"
               alt="ILMS Logo"

@@ -25,6 +25,7 @@ import { auth, isFirebaseConfigured } from '../lib/firebase/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { DataService, localStore } from '../services/dataService';
 import { UserRole, UserProfile } from '../types';
+import { triggerAppSplash } from '../components/AppSplashAnimation';
 
 export const LoginPage: React.FC = () => {
   const { allUsers, switchUser, isFirebaseActive } = useAuth();
@@ -115,6 +116,7 @@ export const LoginPage: React.FC = () => {
             await DataService.updateUser(fallbackProfile);
             await switchUser(fallbackProfile);
           }
+          triggerAppSplash();
           navigate('/');
           return;
         } catch (firebaseErr: any) {
@@ -133,6 +135,7 @@ export const LoginPage: React.FC = () => {
 
       if (matched) {
         await switchUser(matched);
+        triggerAppSplash();
         navigate('/');
       } else {
         setErrorMsg('Invalid email or password. Please verify credentials or register a new account.');
@@ -201,6 +204,7 @@ export const LoginPage: React.FC = () => {
 
       // 3. Immediately log the newly created user in and launch dashboard
       await switchUser(newUser);
+      triggerAppSplash();
       navigate('/');
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to create user account.');

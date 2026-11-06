@@ -1,10 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, Volume2, VolumeX, ShieldCheck, Cpu, Zap, Activity } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Sparkles, Volume2, VolumeX, ShieldCheck, Cpu, Zap } from 'lucide-react';
 
 interface AppSplashAnimationProps {
   onComplete?: () => void;
   durationMs?: number;
 }
+
+// Global helper to trigger the splash animation whenever a user enters the app
+export const triggerAppSplash = () => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('ilms:trigger-splash'));
+  }
+};
 
 // High-tech synthesized Web Audio engine (no external audio files required)
 class LabSoundEngine {
@@ -50,7 +57,7 @@ class LabSoundEngine {
       const sweepGain = ctx.createGain();
       sweep.type = 'triangle';
       sweep.frequency.setValueAtTime(280, now + 0.04);
-      sweep.frequency.exponentialRampToValueAtTime(840, now + 0.32);
+      sweepGain.gain.setValueAtTime(840, now + 0.32);
       sweepGain.gain.setValueAtTime(0.12, now + 0.04);
       sweepGain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
       sweep.connect(sweepGain);
@@ -124,7 +131,7 @@ const INITIAL_BUBBLES: BubbleParticle[] = Array.from({ length: 16 }, (_, i) => (
 
 export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
   onComplete,
-  durationMs = 2800,
+  durationMs = 2600,
 }) => {
   const [isVisible, setIsVisible] = useState(true);
   const [isFadingOut, setIsFadingOut] = useState(false);
@@ -132,8 +139,84 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
   const [statusText, setStatusText] = useState('Initializing Laboratory Operating System...');
   const [activeStage, setActiveStage] = useState(0);
   const [isSoundMuted, setIsSoundMuted] = useState(false);
+  const [animKey, setAnimKey] = useState(0);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
+  const activeTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  // Clear running timers helper
+  const clearAllTimers = useCallback(() => {
+    activeTimersRef.current.forEach((t) => clearTimeout(t));
+    activeTimersRef.current = [];
+  }, []);
+
+  // Execution engine for the opening animation
+  const runAnimationSequence = useCallback(() => {
+    clearAllTimers();
+    setIsVisible(true);
+    setIsFadingOut(false);
+    setProgress(14);
+    setActiveStage(0);
+    setStatusText('Initializing Laboratory Operating System...');
+    setAnimKey((prev) => prev + 1);
+
+    // Initial pop-in power sound
+    const tSound = setTimeout(() => {
+      soundEngine.playPopIn();
+    }, 70);
+
+    // Stage 1: Inventory & Equipment ledger
+    const t1 = setTimeout(() => {
+      setProgress(44);
+      setActiveStage(1);
+      setStatusText('Mounting Universal Inventory & Equipment Ledger...');
+      soundEngine.playTick(659.25);
+    }, 600);
+
+    // Stage 2: Security passports
+    const t2 = setTimeout(() => {
+      setProgress(78);
+      setActiveStage(2);
+      setStatusText('Synchronizing Multi-Laboratory Security Passports...');
+      soundEngine.playTick(783.99);
+    }, 1250);
+
+    // Stage 3: Ready state
+    const t3 = setTimeout(() => {
+      setProgress(100);
+      setActiveStage(3);
+      setStatusText('ILMS Lab OS Online • Ready');
+      soundEngine.playSuccessChime();
+    }, 1900);
+
+    // Stage 4: Fade out
+    const tFade = setTimeout(() => {
+      setIsFadingOut(true);
+    }, durationMs - 450);
+
+    // Stage 5: Finish
+    const tEnd = setTimeout(() => {
+      setIsVisible(false);
+      onComplete?.();
+    }, durationMs);
+
+    activeTimersRef.current = [tSound, t1, t2, t3, tFade, tEnd];
+  }, [clearAllTimers, durationMs, onComplete]);
+
+  // Run on mount (every time user opens/refreshes the app) AND when triggered via ilms:trigger-splash
+  useEffect(() => {
+    runAnimationSequence();
+
+    const handleExternalTrigger = () => {
+      runAnimationSequence();
+    };
+
+    window.addEventListener('ilms:trigger-splash', handleExternalTrigger);
+    return () => {
+      clearAllTimers();
+      window.removeEventListener('ilms:trigger-splash', handleExternalTrigger);
+    };
+  }, [runAnimationSequence, clearAllTimers]);
 
   // Dynamic 3D interactive tilt following pointer
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -157,75 +240,20 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
     }
   };
 
-  useEffect(() => {
-    // Check if splash was already shown in this browser session
-    const hasSeen = sessionStorage.getItem('ilms_splash_seen_session');
-    if (hasSeen === 'true') {
-      setIsVisible(false);
-      onComplete?.();
-      return;
-    }
-
-    // Initial pop-in power sound
-    const initialSoundTimer = setTimeout(() => {
-      soundEngine.playPopIn();
-    }, 80);
-
-    // Progression Timeline with sound effects & diagnostics
-    const timer1 = setTimeout(() => {
-      setProgress(44);
-      setActiveStage(1);
-      setStatusText('Mounting Universal Inventory & Equipment Ledger...');
-      soundEngine.playTick(659.25); // E5
-    }, 650);
-
-    const timer2 = setTimeout(() => {
-      setProgress(78);
-      setActiveStage(2);
-      setStatusText('Synchronizing Multi-Laboratory Security Passports...');
-      soundEngine.playTick(783.99); // G5
-    }, 1350);
-
-    const timer3 = setTimeout(() => {
-      setProgress(100);
-      setActiveStage(3);
-      setStatusText('ILMS Lab OS Online • Ready');
-      soundEngine.playSuccessChime();
-    }, 2050);
-
-    const timerFade = setTimeout(() => {
-      setIsFadingOut(true);
-    }, durationMs - 500);
-
-    const timerEnd = setTimeout(() => {
-      setIsVisible(false);
-      sessionStorage.setItem('ilms_splash_seen_session', 'true');
-      onComplete?.();
-    }, durationMs);
-
-    return () => {
-      clearTimeout(initialSoundTimer);
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-      clearTimeout(timer3);
-      clearTimeout(timerFade);
-      clearTimeout(timerEnd);
-    };
-  }, [durationMs, onComplete]);
-
   const handleSkip = () => {
+    clearAllTimers();
     setIsFadingOut(true);
     setTimeout(() => {
       setIsVisible(false);
-      sessionStorage.setItem('ilms_splash_seen_session', 'true');
       onComplete?.();
-    }, 220);
+    }, 200);
   };
 
   if (!isVisible) return null;
 
   return (
     <div
+      key={`splash-container-${animKey}`}
       ref={containerRef}
       onClick={handleSkip}
       onMouseMove={handleMouseMove}
@@ -294,7 +322,10 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
         ))}
 
         {/* Explosive Shockwave Pulse Ring on Entrance */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-purple-400/60 pointer-events-none ilms-shockwave-ring" />
+        <div
+          key={`shockwave-${animKey}`}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-purple-400/60 pointer-events-none ilms-shockwave-ring"
+        />
       </div>
 
       {/* Centerpiece Container with 3D Perspective */}
@@ -306,6 +337,7 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
       >
         {/* Animated App Logo Wrapper with Explosive POP-IN */}
         <div
+          key={`logo-wrapper-${animKey}`}
           className="relative group mb-6 ilms-pop-in-box"
           style={{
             transform: `perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
