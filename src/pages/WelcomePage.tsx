@@ -413,9 +413,11 @@ export const WelcomePage: React.FC = () => {
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
           {/* Logo & University Brand */}
           <div className="flex items-center space-x-2 sm:space-x-3 cursor-pointer shrink-0 min-w-0" onClick={() => navigate('/')}>
-            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-[#BCA0F5] to-[#FFD2BF] flex items-center justify-center shadow-sm shrink-0">
-              <Atom className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-            </div>
+            <img
+              src="/logo.png"
+              alt="ILMS Logo"
+              className="w-9 h-9 sm:w-11 sm:h-11 rounded-2xl object-contain shadow-xs shrink-0 hover:scale-105 transition-transform"
+            />
             <div className="min-w-0">
               <span className="font-heading font-black text-lg sm:text-xl tracking-tight text-[#332B40] block leading-tight">ILMS</span>
               <span className="hidden sm:block text-[10px] font-bold uppercase tracking-wider text-[#71667D] truncate">

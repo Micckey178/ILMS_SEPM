@@ -131,9 +131,11 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Brand Logo with Lavender-Peach Gradient */}
           <div className="flex items-center space-x-1.5 sm:space-x-2.5 cursor-pointer" onClick={() => navigate('/')}>
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-2xl bg-gradient-to-tr from-[#BCA0F5] to-[#FFD2BF] flex items-center justify-center shadow-sm">
-              <span className="font-extrabold text-xs sm:text-sm tracking-wider text-white">ILMS</span>
-            </div>
+            <img
+              src="/logo.png"
+              alt="ILMS Logo"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl object-contain shadow-xs hover:scale-105 transition-transform"
+            />
             <div className="hidden sm:block">
               <div className="flex items-center space-x-1.5">
                 <span className="font-heading font-black text-base text-[#332B40] tracking-tight">

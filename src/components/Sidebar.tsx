@@ -165,9 +165,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         {/* Mobile Close Button */}
         <div className="flex items-center justify-between p-4 border-b border-[#E9DDF1] lg:hidden">
           <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#BCA0F5] to-[#FFD2BF] text-white flex items-center justify-center font-bold text-sm">
-              ILMS
-            </div>
+            <img
+              src="/logo.png"
+              alt="ILMS Logo"
+              className="w-8 h-8 rounded-xl object-contain shadow-xs"
+            />
             <span className="font-heading font-extrabold text-base text-[#332B40]">Menu</span>
           </div>
           <button

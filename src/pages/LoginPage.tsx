@@ -237,9 +237,11 @@ export const LoginPage: React.FC = () => {
 
         {/* Top Header Logo */}
         <div className="relative z-10 flex items-center space-x-3">
-          <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-lg">
-            <Atom className="w-7 h-7 text-white" />
-          </div>
+          <img
+            src="/logo.png"
+            alt="ILMS Logo"
+            className="w-12 h-12 rounded-2xl bg-white/90 p-1 border border-white/40 shadow-lg object-contain"
+          />
           <div>
             <span className="font-extrabold text-2xl tracking-wider text-white font-heading">ILMS</span>
             <span className="block text-xs uppercase tracking-widest text-purple-200 font-semibold">

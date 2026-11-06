@@ -27,6 +27,7 @@ import { ResourceIntelligencePage } from './pages/ResourceIntelligencePage';
 import { LoginPage } from './pages/LoginPage';
 import { WelcomePage } from './pages/WelcomePage';
 import { LabAssistantBot } from './components/LabAssistantBot';
+import { AppSplashAnimation } from './components/AppSplashAnimation';
 import { InAppNotification, UniversalInventoryItem, EquipmentAsset } from './types';
 import { DataService } from './services/dataService';
 
@@ -161,6 +162,8 @@ export function App() {
   return (
     <Router>
       <AuthProvider>
+        {/* Dynamic Launch Splash Animation with App Logo */}
+        <AppSplashAnimation />
         <Routes>
           <Route path="/welcome" element={<WelcomePage />} />
           <Route path="/login" element={<WelcomePage />} />
