@@ -13,13 +13,13 @@ export const triggerAppSplash = (mode: 'launch' | 'welcome-back' = 'launch') => 
   }
 };
 
-// Studio-Grade One-Shot Cinematic Signature Audio Engine
-class CinematicSoundEngine {
+// High-tech synthesized Web Audio engine (Previous Sound Engine preserved)
+class LabSoundEngine {
   private ctx: AudioContext | null = null;
   public enabled: boolean = true;
   public hasPlayedIntro: boolean = false;
 
-  public init(): AudioContext | null {
+  public getContext(): AudioContext | null {
     if (!this.enabled) return null;
     try {
       if (!this.ctx) {
@@ -35,97 +35,93 @@ class CinematicSoundEngine {
     }
   }
 
-  // Unified ONE-SHOT Cinematic Audio Signature:
-  // Sub-bass impact -> Turbine swell -> Ascending harmonic flourish -> Majestic celestial chord ring-out
-  playOneShotSignature() {
-    const ctx = this.init();
-    if (!ctx || !this.enabled) return;
+  playPopIn() {
+    const ctx = this.getContext();
+    if (!ctx) return;
     try {
       const now = ctx.currentTime;
       this.hasPlayedIntro = true;
 
-      // 1. SUB-BASS RESONANT IMPACT PUNCH (0.0s -> 0.85s)
-      const subOsc = ctx.createOscillator();
-      const subGain = ctx.createGain();
-      subOsc.type = 'sine';
-      subOsc.frequency.setValueAtTime(105, now);
-      subOsc.frequency.exponentialRampToValueAtTime(32, now + 0.6);
-      subGain.gain.setValueAtTime(0.44, now);
-      subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.85);
-      subOsc.connect(subGain);
-      subGain.connect(ctx.destination);
-      subOsc.start(now);
-      subOsc.stop(now + 0.9);
+      // Sub-bass resonant impact
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(160, now);
+      osc.frequency.exponentialRampToValueAtTime(40, now + 0.38);
+      gain.gain.setValueAtTime(0.28, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.4);
 
-      // 2. POWER TURBINE WHOOSH / SWELL (0.0s -> 0.55s)
-      const whooshOsc = ctx.createOscillator();
-      const whooshGain = ctx.createGain();
-      const whooshFilter = ctx.createBiquadFilter();
-      whooshOsc.type = 'sawtooth';
-      whooshOsc.frequency.setValueAtTime(120, now);
-      whooshOsc.frequency.exponentialRampToValueAtTime(480, now + 0.38);
-      whooshFilter.type = 'lowpass';
-      whooshFilter.frequency.setValueAtTime(220, now);
-      whooshFilter.frequency.exponentialRampToValueAtTime(2600, now + 0.42);
-      whooshGain.gain.setValueAtTime(0.01, now);
-      whooshGain.gain.linearRampToValueAtTime(0.18, now + 0.12);
-      whooshGain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
-      whooshOsc.connect(whooshFilter);
-      whooshFilter.connect(whooshGain);
-      whooshGain.connect(ctx.destination);
-      whooshOsc.start(now);
-      whooshOsc.stop(now + 0.6);
+      // Sci-fi high-energy power up whoosh
+      const sweep = ctx.createOscillator();
+      const sweepGain = ctx.createGain();
+      sweep.type = 'triangle';
+      sweep.frequency.setValueAtTime(280, now + 0.04);
+      sweep.frequency.exponentialRampToValueAtTime(840, now + 0.32);
+      sweepGain.gain.setValueAtTime(0.12, now + 0.04);
+      sweepGain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+      sweep.connect(sweepGain);
+      sweepGain.connect(ctx.destination);
+      sweep.start(now + 0.04);
+      sweep.stop(now + 0.35);
+    } catch {
+      // Audio autoplay restrictions silently caught
+    }
+  }
 
-      // 3. ASCENDING CHORD HARMONIC FLOURISH (0.12s -> 0.45s)
-      const arpNotes = [440.0, 554.37, 659.25, 880.0]; // A4, C#5, E5, A5
-      arpNotes.forEach((freq, idx) => {
-        const t = now + 0.1 + idx * 0.05;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(freq, t);
-        gain.gain.setValueAtTime(0.11, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(t);
-        osc.stop(t + 0.36);
-      });
+  playTick(frequency = 660) {
+    const ctx = this.getContext();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(frequency, now);
+      gain.gain.setValueAtTime(0.09, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.15);
+    } catch {}
+  }
 
-      // 4. MAJESTIC RESOLUTION CHORD WITH CRYSTAL RING (0.35s -> 2.2s)
-      const grandChord = [554.37, 659.25, 830.61, 987.77, 1318.51];
-      grandChord.forEach((freq, idx) => {
+  playSuccessChime() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      // Futuristic major triad arpeggio (C5 -> E5 -> G5 -> C6)
+      const notes = [523.25, 659.25, 783.99, 1046.5];
+      notes.forEach((freq, idx) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, now + 0.32);
-        gain.gain.setValueAtTime(0.001, now + 0.32);
-        gain.gain.linearRampToValueAtTime(0.14, now + 0.42);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.15);
+        osc.frequency.setValueAtTime(freq, now + idx * 0.065);
+        gain.gain.setValueAtTime(0.12, now + idx * 0.065);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.065 + 0.55);
         osc.connect(gain);
         gain.connect(ctx.destination);
-        osc.start(now + 0.32);
-        osc.stop(now + 2.2);
+        osc.start(now + idx * 0.065);
+        osc.stop(now + idx * 0.065 + 0.6);
       });
+    } catch {}
+  }
 
-      // 5. CELESTIAL OVERTONE SPARKLE (0.42s -> 2.0s)
-      const highSparkle = ctx.createOscillator();
-      const sparkleGain = ctx.createGain();
-      highSparkle.type = 'sine';
-      highSparkle.frequency.setValueAtTime(2093.0, now + 0.42);
-      sparkleGain.gain.setValueAtTime(0.06, now + 0.42);
-      sparkleGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.85);
-      highSparkle.connect(sparkleGain);
-      sparkleGain.connect(ctx.destination);
-      highSparkle.start(now + 0.42);
-      highSparkle.stop(now + 1.9);
-    } catch {
-      // Browser autoplay policy caught smoothly
-    }
+  // Combined one-shot signature: Pop-in whoosh followed seamlessly by success chime
+  playOneShot() {
+    this.playPopIn();
+    setTimeout(() => {
+      this.playSuccessChime();
+    }, 360);
   }
 }
 
-const soundEngine = new CinematicSoundEngine();
+const soundEngine = new LabSoundEngine();
 
 // Ambient laboratory micro-bubbles
 interface BubbleParticle {
@@ -147,7 +143,6 @@ const INITIAL_BUBBLES: BubbleParticle[] = Array.from({ length: 16 }, (_, i) => (
 // Thresholds for detecting returning user:
 // 45 seconds of tab hiding or 3 minutes of inactive time
 const AWAY_THRESHOLD_MS = 45 * 1000;
-const INACTIVITY_THRESHOLD_MS = 180 * 1000;
 
 export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
   onComplete,
@@ -188,8 +183,8 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
           : 'Initializing Laboratory Operating System...'
       );
 
-      // ONE-SHOT CINEMATIC THEME (Plays once seamlessly from frame 0)
-      soundEngine.playOneShotSignature();
+      // Play the previous sound in one unified shot
+      soundEngine.playOneShot();
 
       // Stage 1: Visual Ledger check (520ms)
       const t1 = setTimeout(() => {
@@ -262,7 +257,6 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
     // Update last-active timestamp when user interacts
     const markActive = () => {
       const current = Date.now();
-      // Throttle localStorage writes to once every 10 seconds
       if (current - lastActiveRef.current > 10000) {
         lastActiveRef.current = current;
         localStorage.setItem('ilms_last_active_time', current.toString());
@@ -284,7 +278,6 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
         const leftTime = Number(localStorage.getItem('ilms_tab_left_time') || lastActiveRef.current);
         const timeAway = nowReturn - leftTime;
 
-        // If away for more than AWAY_THRESHOLD_MS (45s), celebrate return!
         if (timeAway >= AWAY_THRESHOLD_MS) {
           localStorage.setItem('ilms_last_active_time', nowReturn.toString());
           runAnimationSequence('welcome-back');
@@ -292,7 +285,6 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
       }
     };
 
-    // Track window focus (switching back from another window/app)
     const handleWindowFocus = () => {
       const nowFocus = Date.now();
       const last = Number(localStorage.getItem('ilms_last_active_time') || lastActiveRef.current);
@@ -307,9 +299,9 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
 
     // Browser audio unlock on ANY early user interaction
     const unlockAudio = () => {
-      soundEngine.init();
+      soundEngine.getContext();
       if (!soundEngine.hasPlayedIntro) {
-        soundEngine.playOneShotSignature();
+        soundEngine.playOneShot();
       }
     };
 
@@ -356,7 +348,7 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
     setIsSoundMuted(next);
     soundEngine.enabled = !next;
     if (!next) {
-      soundEngine.playOneShotSignature();
+      soundEngine.playOneShot();
     }
   };
 
@@ -405,7 +397,7 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
             <>
               <Volume2 className="w-4 h-4 text-cyan-300 animate-pulse" />
               <span className="hidden sm:inline text-[10px] font-mono font-bold tracking-wider uppercase text-purple-200">
-                Cinema Audio
+                Audio
               </span>
             </>
           )}
