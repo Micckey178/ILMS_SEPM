@@ -1347,9 +1347,11 @@ export const WelcomePage: React.FC = () => {
             {/* Header */}
             <div className="p-5 border-b border-[#E9DDF1] flex items-center justify-between bg-gradient-to-r from-[#FFF8F2] via-[#F0E9FF] to-[#FBE5EF]">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-2xl bg-white border border-[#BCA0F5] overflow-hidden flex items-center justify-center shadow-sm">
-                  <img src="/mascot.png" alt="Mascot" className="w-full h-full object-contain scale-115" />
-                </div>
+                <img
+                  src="/logo.png"
+                  alt="ILMS App Logo"
+                  className="w-10 h-10 rounded-2xl object-contain shadow-xs shrink-0"
+                />
                 <div>
                   <h3 className="font-heading font-black text-base text-[#332B40]">
                     Install ILMS
@@ -1372,9 +1374,11 @@ export const WelcomePage: React.FC = () => {
             <div className="p-6 overflow-y-auto space-y-5">
               {/* App Summary Card */}
               <div className="p-4 rounded-2xl bg-[#FFF8F2] border border-[#E9DDF1] flex items-center space-x-3.5">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#BCA0F5] to-[#FFD2BF] flex items-center justify-center text-white font-extrabold shadow-sm shrink-0">
-                  <Atom className="w-7 h-7" />
-                </div>
+                <img
+                  src="/logo.png"
+                  alt="ILMS Logo"
+                  className="w-12 h-12 rounded-2xl object-contain shadow-xs shrink-0"
+                />
                 <div className="min-w-0 flex-1">
                   <h4 className="font-heading font-bold text-sm text-[#332B40] truncate">
                     ILMS — Laboratory OS
