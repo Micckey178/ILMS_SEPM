@@ -13,7 +13,7 @@ export const triggerAppSplash = () => {
   }
 };
 
-// Studio-Grade Cinematic Web Audio Engine (Multi-layered synthesizer)
+// Studio-Grade One-Shot Cinematic Signature Audio Engine
 class CinematicSoundEngine {
   private ctx: AudioContext | null = null;
   public enabled: boolean = true;
@@ -35,39 +35,40 @@ class CinematicSoundEngine {
     }
   }
 
-  // Cinematic Sub-Bass Impact + Cyber Whoosh + Crystal Chime Overtones
-  playCinematicIntro() {
+  // Unified ONE-SHOT Cinematic Audio Signature:
+  // Sub-bass impact -> Turbine swell -> Ascending harmonic flourish -> Majestic celestial chord ring-out
+  playOneShotSignature() {
     const ctx = this.init();
     if (!ctx || !this.enabled) return;
     try {
       const now = ctx.currentTime;
       this.hasPlayedIntro = true;
 
-      // 1. SUB-BASS RESONANT DROP (Cinematic punch: 95Hz -> 30Hz deep rumble)
+      // 1. SUB-BASS RESONANT IMPACT PUNCH (0.0s -> 0.85s)
       const subOsc = ctx.createOscillator();
       const subGain = ctx.createGain();
       subOsc.type = 'sine';
-      subOsc.frequency.setValueAtTime(95, now);
-      subOsc.frequency.exponentialRampToValueAtTime(30, now + 0.65);
-      subGain.gain.setValueAtTime(0.42, now);
+      subOsc.frequency.setValueAtTime(105, now);
+      subOsc.frequency.exponentialRampToValueAtTime(32, now + 0.6);
+      subGain.gain.setValueAtTime(0.44, now);
       subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.85);
       subOsc.connect(subGain);
       subGain.connect(ctx.destination);
       subOsc.start(now);
       subOsc.stop(now + 0.9);
 
-      // 2. POWER TURBINE WHOOSH / SWELL (Lowpass filtered warm saw sweep)
+      // 2. POWER TURBINE WHOOSH / SWELL (0.0s -> 0.55s)
       const whooshOsc = ctx.createOscillator();
       const whooshGain = ctx.createGain();
       const whooshFilter = ctx.createBiquadFilter();
       whooshOsc.type = 'sawtooth';
-      whooshOsc.frequency.setValueAtTime(130, now);
-      whooshOsc.frequency.exponentialRampToValueAtTime(540, now + 0.45);
+      whooshOsc.frequency.setValueAtTime(120, now);
+      whooshOsc.frequency.exponentialRampToValueAtTime(480, now + 0.38);
       whooshFilter.type = 'lowpass';
       whooshFilter.frequency.setValueAtTime(220, now);
-      whooshFilter.frequency.exponentialRampToValueAtTime(2400, now + 0.45);
+      whooshFilter.frequency.exponentialRampToValueAtTime(2600, now + 0.42);
       whooshGain.gain.setValueAtTime(0.01, now);
-      whooshGain.gain.linearRampToValueAtTime(0.16, now + 0.12);
+      whooshGain.gain.linearRampToValueAtTime(0.18, now + 0.12);
       whooshGain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
       whooshOsc.connect(whooshFilter);
       whooshFilter.connect(whooshGain);
@@ -75,67 +76,54 @@ class CinematicSoundEngine {
       whooshOsc.start(now);
       whooshOsc.stop(now + 0.6);
 
-      // 3. SHIMMERING CRYSTAL HARMONICS (Celestial D5, A5, D6, A6 open chord)
-      const shimmerNotes = [587.33, 880.0, 1174.66, 1760.0];
-      shimmerNotes.forEach((freq, idx) => {
+      // 3. ASCENDING CHORD HARMONIC FLOURISH (0.12s -> 0.45s)
+      // Rapid shimmering arpeggio that launches into the chord
+      const arpNotes = [440.0, 554.37, 659.25, 880.0]; // A4, C#5, E5, A5
+      arpNotes.forEach((freq, idx) => {
+        const t = now + 0.1 + idx * 0.05;
         const osc = ctx.createOscillator();
-        const g = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, now + 0.04 + idx * 0.035);
-        g.gain.setValueAtTime(0.09, now + 0.04 + idx * 0.035);
-        g.gain.exponentialRampToValueAtTime(0.0001, now + 0.75 + idx * 0.06);
-        osc.connect(g);
-        g.connect(ctx.destination);
-        osc.start(now + 0.04 + idx * 0.035);
-        osc.stop(now + 0.85 + idx * 0.06);
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, t);
+        gain.gain.setValueAtTime(0.11, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.36);
       });
-    } catch {
-      // Browser autoplay policy caught smoothly
-    }
-  }
 
-  // Futuristic Holographic Progress Ticks
-  playHoloTick(stage = 1) {
-    const ctx = this.init();
-    if (!ctx || !this.enabled) return;
-    try {
-      const now = ctx.currentTime;
-      const baseFreq = stage === 1 ? 784 : 1046.5; // G5 or C6
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(baseFreq, now);
-      osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.4, now + 0.08);
-      gain.gain.setValueAtTime(0.12, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.14);
-    } catch {}
-  }
-
-  // Majestic Lab Ready Completion Chord (Full rich Major 9th chord)
-  playMajesticReady() {
-    const ctx = this.init();
-    if (!ctx || !this.enabled) return;
-    try {
-      const now = ctx.currentTime;
-      // C5, E5, G5, B5, D6 (Cmaj9 celestial laboratory chord)
-      const chord = [523.25, 659.25, 783.99, 987.77, 1174.66];
-      chord.forEach((freq, idx) => {
+      // 4. MAJESTIC RESOLUTION CHORD WITH CRYSTAL RING (0.35s -> 2.2s)
+      // Rich polyphonic major 9th chord pad that rings out together in one continuous harmony
+      const grandChord = [554.37, 659.25, 830.61, 987.77, 1318.51];
+      grandChord.forEach((freq, idx) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, now + idx * 0.045);
-        gain.gain.setValueAtTime(0.14, now + idx * 0.045);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.15);
+        osc.frequency.setValueAtTime(freq, now + 0.32);
+        gain.gain.setValueAtTime(0.001, now + 0.32);
+        gain.gain.linearRampToValueAtTime(0.14, now + 0.42);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.15);
         osc.connect(gain);
         gain.connect(ctx.destination);
-        osc.start(now + idx * 0.045);
-        osc.stop(now + 1.2);
+        osc.start(now + 0.32);
+        osc.stop(now + 2.2);
       });
-    } catch {}
+
+      // 5. CELESTIAL OVERTONE SPARKLE (0.42s -> 2.0s)
+      const highSparkle = ctx.createOscillator();
+      const sparkleGain = ctx.createGain();
+      highSparkle.type = 'sine';
+      highSparkle.frequency.setValueAtTime(2093.0, now + 0.42);
+      sparkleGain.gain.setValueAtTime(0.06, now + 0.42);
+      sparkleGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.85);
+      highSparkle.connect(sparkleGain);
+      sparkleGain.connect(ctx.destination);
+      highSparkle.start(now + 0.42);
+      highSparkle.stop(now + 1.9);
+    } catch {
+      // Browser autoplay policy caught smoothly
+    }
   }
 }
 
@@ -187,31 +175,28 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
     setActiveStage(0);
     setStatusText('Initializing Laboratory Operating System...');
 
-    // Attempt instant audio play
-    soundEngine.playCinematicIntro();
+    // ONE-SHOT CINEMATIC THEME (Plays once seamlessly from frame 0)
+    soundEngine.playOneShotSignature();
 
-    // Stage 1: Ledger check (520ms)
+    // Stage 1: Visual Ledger check (520ms)
     const t1 = setTimeout(() => {
       setProgress(48);
       setActiveStage(1);
       setStatusText('Mounting Universal Inventory & Equipment Ledger...');
-      soundEngine.playHoloTick(1);
     }, 520);
 
-    // Stage 2: Security check (1100ms)
+    // Stage 2: Visual Security check (1100ms)
     const t2 = setTimeout(() => {
       setProgress(82);
       setActiveStage(2);
       setStatusText('Synchronizing Multi-Laboratory Security Passports...');
-      soundEngine.playHoloTick(2);
     }, 1100);
 
-    // Stage 3: Ready state (1750ms)
+    // Stage 3: Visual Ready state (1750ms)
     const t3 = setTimeout(() => {
       setProgress(100);
       setActiveStage(3);
       setStatusText('ILMS Lab OS Online • Ready');
-      soundEngine.playMajesticReady();
     }, 1750);
 
     // Stage 4: Silky-smooth staged dissolve (starts 750ms before unmount)
@@ -236,7 +221,7 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
     const unlockAudio = () => {
       soundEngine.init();
       if (!soundEngine.hasPlayedIntro) {
-        soundEngine.playCinematicIntro();
+        soundEngine.playOneShotSignature();
       }
     };
 
@@ -274,7 +259,7 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
     setIsSoundMuted(next);
     soundEngine.enabled = !next;
     if (!next) {
-      soundEngine.playHoloTick(1);
+      soundEngine.playOneShotSignature();
     }
   };
 
