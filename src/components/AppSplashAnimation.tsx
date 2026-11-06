@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Sparkles, Volume2, VolumeX, ShieldCheck, Cpu, Zap } from 'lucide-react';
+import { Sparkles, Volume2, VolumeX, ShieldCheck, Cpu, Zap, Activity } from 'lucide-react';
 
 interface AppSplashAnimationProps {
   onComplete?: () => void;
@@ -13,12 +13,13 @@ export const triggerAppSplash = () => {
   }
 };
 
-// High-tech synthesized Web Audio engine (no external audio files required)
-class LabSoundEngine {
+// Studio-Grade Cinematic Web Audio Engine (Multi-layered synthesizer)
+class CinematicSoundEngine {
   private ctx: AudioContext | null = null;
   public enabled: boolean = true;
+  public hasPlayedIntro: boolean = false;
 
-  private getContext(): AudioContext | null {
+  public init(): AudioContext | null {
     if (!this.enabled) return null;
     try {
       if (!this.ctx) {
@@ -34,83 +35,111 @@ class LabSoundEngine {
     }
   }
 
-  playPopIn() {
-    const ctx = this.getContext();
-    if (!ctx) return;
+  // Cinematic Sub-Bass Impact + Cyber Whoosh + Crystal Chime Overtones
+  playCinematicIntro() {
+    const ctx = this.init();
+    if (!ctx || !this.enabled) return;
     try {
       const now = ctx.currentTime;
-      // Sub-bass resonant impact
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(160, now);
-      osc.frequency.exponentialRampToValueAtTime(40, now + 0.38);
-      gain.gain.setValueAtTime(0.28, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.4);
+      this.hasPlayedIntro = true;
 
-      // Sci-fi high-energy power up whoosh
-      const sweep = ctx.createOscillator();
-      const sweepGain = ctx.createGain();
-      sweep.type = 'triangle';
-      sweep.frequency.setValueAtTime(280, now + 0.04);
-      sweepGain.gain.setValueAtTime(840, now + 0.32);
-      sweepGain.gain.setValueAtTime(0.12, now + 0.04);
-      sweepGain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
-      sweep.connect(sweepGain);
-      sweepGain.connect(ctx.destination);
-      sweep.start(now + 0.04);
-      sweep.stop(now + 0.35);
+      // 1. SUB-BASS RESONANT DROP (Cinematic punch: 95Hz -> 30Hz deep rumble)
+      const subOsc = ctx.createOscillator();
+      const subGain = ctx.createGain();
+      subOsc.type = 'sine';
+      subOsc.frequency.setValueAtTime(95, now);
+      subOsc.frequency.exponentialRampToValueAtTime(30, now + 0.65);
+      subGain.gain.setValueAtTime(0.42, now);
+      subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.85);
+      subOsc.connect(subGain);
+      subGain.connect(ctx.destination);
+      subOsc.start(now);
+      subOsc.stop(now + 0.9);
+
+      // 2. POWER TURBINE WHOOSH / SWELL (Lowpass filtered warm saw sweep)
+      const whooshOsc = ctx.createOscillator();
+      const whooshGain = ctx.createGain();
+      const whooshFilter = ctx.createBiquadFilter();
+      whooshOsc.type = 'sawtooth';
+      whooshOsc.frequency.setValueAtTime(130, now);
+      whooshOsc.frequency.exponentialRampToValueAtTime(540, now + 0.45);
+      whooshFilter.type = 'lowpass';
+      whooshFilter.frequency.setValueAtTime(220, now);
+      whooshFilter.frequency.exponentialRampToValueAtTime(2400, now + 0.45);
+      whooshGain.gain.setValueAtTime(0.01, now);
+      whooshGain.gain.linearRampToValueAtTime(0.16, now + 0.12);
+      whooshGain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+      whooshOsc.connect(whooshFilter);
+      whooshFilter.connect(whooshGain);
+      whooshGain.connect(ctx.destination);
+      whooshOsc.start(now);
+      whooshOsc.stop(now + 0.6);
+
+      // 3. SHIMMERING CRYSTAL HARMONICS (Celestial D5, A5, D6, A6 open chord)
+      const shimmerNotes = [587.33, 880.0, 1174.66, 1760.0];
+      shimmerNotes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + 0.04 + idx * 0.035);
+        g.gain.setValueAtTime(0.09, now + 0.04 + idx * 0.035);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + 0.75 + idx * 0.06);
+        osc.connect(g);
+        g.connect(ctx.destination);
+        osc.start(now + 0.04 + idx * 0.035);
+        osc.stop(now + 0.85 + idx * 0.06);
+      });
     } catch {
-      // Audio autoplay restrictions silently caught
+      // Browser autoplay policy caught smoothly
     }
   }
 
-  playTick(frequency = 660) {
-    const ctx = this.getContext();
-    if (!ctx) return;
+  // Futuristic Holographic Progress Ticks
+  playHoloTick(stage = 1) {
+    const ctx = this.init();
+    if (!ctx || !this.enabled) return;
     try {
       const now = ctx.currentTime;
+      const baseFreq = stage === 1 ? 784 : 1046.5; // G5 or C6
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(frequency, now);
-      gain.gain.setValueAtTime(0.09, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(baseFreq, now);
+      osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.4, now + 0.08);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start(now);
-      osc.stop(now + 0.15);
+      osc.stop(now + 0.14);
     } catch {}
   }
 
-  playSuccessChime() {
-    const ctx = this.getContext();
-    if (!ctx) return;
+  // Majestic Lab Ready Completion Chord (Full rich Major 9th chord)
+  playMajesticReady() {
+    const ctx = this.init();
+    if (!ctx || !this.enabled) return;
     try {
       const now = ctx.currentTime;
-      // Futuristic major triad arpeggio (C5 -> E5 -> G5 -> C6)
-      const notes = [523.25, 659.25, 783.99, 1046.5];
-      notes.forEach((freq, idx) => {
+      // C5, E5, G5, B5, D6 (Cmaj9 celestial laboratory chord)
+      const chord = [523.25, 659.25, 783.99, 987.77, 1174.66];
+      chord.forEach((freq, idx) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, now + idx * 0.065);
-        gain.gain.setValueAtTime(0.12, now + idx * 0.065);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.065 + 0.55);
+        osc.frequency.setValueAtTime(freq, now + idx * 0.045);
+        gain.gain.setValueAtTime(0.14, now + idx * 0.045);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.15);
         osc.connect(gain);
         gain.connect(ctx.destination);
-        osc.start(now + idx * 0.065);
-        osc.stop(now + idx * 0.065 + 0.6);
+        osc.start(now + idx * 0.045);
+        osc.stop(now + 1.2);
       });
     } catch {}
   }
 }
 
-const soundEngine = new LabSoundEngine();
+const soundEngine = new CinematicSoundEngine();
 
 // Ambient laboratory micro-bubbles
 interface BubbleParticle {
@@ -124,88 +153,95 @@ interface BubbleParticle {
 const INITIAL_BUBBLES: BubbleParticle[] = Array.from({ length: 16 }, (_, i) => ({
   id: i,
   left: Math.random() * 92 + 4,
-  size: Math.random() * 14 + 6,
+  size: Math.random() * 12 + 6,
   duration: Math.random() * 2.5 + 2,
   delay: Math.random() * 1.5,
 }));
 
 export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
   onComplete,
-  durationMs = 2600,
+  durationMs = 2500,
 }) => {
   const [isVisible, setIsVisible] = useState(true);
   const [isFadingOut, setIsFadingOut] = useState(false);
-  const [progress, setProgress] = useState(14);
+  const [progress, setProgress] = useState(16);
   const [statusText, setStatusText] = useState('Initializing Laboratory Operating System...');
   const [activeStage, setActiveStage] = useState(0);
   const [isSoundMuted, setIsSoundMuted] = useState(false);
-  const [animKey, setAnimKey] = useState(0);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const activeTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-  // Clear running timers helper
+  // Clear running timers
   const clearAllTimers = useCallback(() => {
     activeTimersRef.current.forEach((t) => clearTimeout(t));
     activeTimersRef.current = [];
   }, []);
 
-  // Execution engine for the opening animation
+  // Execution timeline for the opening animation
   const runAnimationSequence = useCallback(() => {
     clearAllTimers();
     setIsVisible(true);
     setIsFadingOut(false);
-    setProgress(14);
+    setProgress(16);
     setActiveStage(0);
     setStatusText('Initializing Laboratory Operating System...');
-    setAnimKey((prev) => prev + 1);
 
-    // Initial pop-in power sound
-    const tSound = setTimeout(() => {
-      soundEngine.playPopIn();
-    }, 70);
+    // Attempt instant audio play
+    soundEngine.playCinematicIntro();
 
-    // Stage 1: Inventory & Equipment ledger
+    // Stage 1: Ledger check (550ms)
     const t1 = setTimeout(() => {
-      setProgress(44);
+      setProgress(48);
       setActiveStage(1);
       setStatusText('Mounting Universal Inventory & Equipment Ledger...');
-      soundEngine.playTick(659.25);
-    }, 600);
+      soundEngine.playHoloTick(1);
+    }, 550);
 
-    // Stage 2: Security passports
+    // Stage 2: Security check (1150ms)
     const t2 = setTimeout(() => {
-      setProgress(78);
+      setProgress(82);
       setActiveStage(2);
       setStatusText('Synchronizing Multi-Laboratory Security Passports...');
-      soundEngine.playTick(783.99);
-    }, 1250);
+      soundEngine.playHoloTick(2);
+    }, 1150);
 
-    // Stage 3: Ready state
+    // Stage 3: Ready state (1800ms)
     const t3 = setTimeout(() => {
       setProgress(100);
       setActiveStage(3);
       setStatusText('ILMS Lab OS Online • Ready');
-      soundEngine.playSuccessChime();
-    }, 1900);
+      soundEngine.playMajesticReady();
+    }, 1800);
 
     // Stage 4: Fade out
     const tFade = setTimeout(() => {
       setIsFadingOut(true);
     }, durationMs - 450);
 
-    // Stage 5: Finish
+    // Stage 5: Unmount
     const tEnd = setTimeout(() => {
       setIsVisible(false);
       onComplete?.();
     }, durationMs);
 
-    activeTimersRef.current = [tSound, t1, t2, t3, tFade, tEnd];
+    activeTimersRef.current = [t1, t2, t3, tFade, tEnd];
   }, [clearAllTimers, durationMs, onComplete]);
 
   // Run on mount (every time user opens/refreshes the app) AND when triggered via ilms:trigger-splash
   useEffect(() => {
     runAnimationSequence();
+
+    // Browser audio unlock on ANY early user interaction
+    const unlockAudio = () => {
+      soundEngine.init();
+      if (!soundEngine.hasPlayedIntro) {
+        soundEngine.playCinematicIntro();
+      }
+    };
+
+    window.addEventListener('pointerdown', unlockAudio, { once: true });
+    window.addEventListener('keydown', unlockAudio, { once: true });
 
     const handleExternalTrigger = () => {
       runAnimationSequence();
@@ -214,6 +250,8 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
     window.addEventListener('ilms:trigger-splash', handleExternalTrigger);
     return () => {
       clearAllTimers();
+      window.removeEventListener('pointerdown', unlockAudio);
+      window.removeEventListener('keydown', unlockAudio);
       window.removeEventListener('ilms:trigger-splash', handleExternalTrigger);
     };
   }, [runAnimationSequence, clearAllTimers]);
@@ -236,7 +274,7 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
     setIsSoundMuted(next);
     soundEngine.enabled = !next;
     if (!next) {
-      soundEngine.playTick(880);
+      soundEngine.playHoloTick(1);
     }
   };
 
@@ -246,18 +284,17 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
     setTimeout(() => {
       setIsVisible(false);
       onComplete?.();
-    }, 200);
+    }, 180);
   };
 
   if (!isVisible) return null;
 
   return (
     <div
-      key={`splash-container-${animKey}`}
       ref={containerRef}
       onClick={handleSkip}
       onMouseMove={handleMouseMove}
-      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden cursor-pointer select-none transition-all duration-500 ease-out ${
+      className={`fixed inset-0 z-[99999] flex flex-col items-center justify-center overflow-hidden cursor-pointer select-none transition-all duration-500 ease-out ${
         isFadingOut
           ? 'opacity-0 scale-105 pointer-events-none'
           : 'opacity-100 scale-100'
@@ -280,7 +317,7 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
             <>
               <Volume2 className="w-4 h-4 text-cyan-300 animate-pulse" />
               <span className="hidden sm:inline text-[10px] font-mono font-bold tracking-wider uppercase text-purple-200">
-                Audio On
+                Cinema Audio
               </span>
             </>
           )}
@@ -322,10 +359,7 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
         ))}
 
         {/* Explosive Shockwave Pulse Ring on Entrance */}
-        <div
-          key={`shockwave-${animKey}`}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-purple-400/60 pointer-events-none ilms-shockwave-ring"
-        />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-purple-400/60 pointer-events-none ilms-shockwave-ring" />
       </div>
 
       {/* Centerpiece Container with 3D Perspective */}
@@ -335,9 +369,8 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
           perspective: '1000px',
         }}
       >
-        {/* Animated App Logo Wrapper with Explosive POP-IN */}
+        {/* Animated App Logo Wrapper with INSTANT Burst & Float */}
         <div
-          key={`logo-wrapper-${animKey}`}
           className="relative group mb-6 ilms-pop-in-box"
           style={{
             transform: `perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
@@ -365,16 +398,18 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
 
           {/* Main App Logo Card with 3D Float, Shimmer & Laser Scan */}
           <div
-            className="relative w-36 h-36 sm:w-44 sm:h-44 rounded-[36px] bg-gradient-to-br from-white/95 via-purple-50/90 to-purple-100/80 p-2.5 shadow-[0_25px_60px_rgba(137,97,216,0.45)] border-2 border-white/80 backdrop-blur-md overflow-hidden transform transition-all duration-300 hover:scale-105"
+            className="relative w-40 h-40 sm:w-48 sm:h-48 rounded-[38px] bg-gradient-to-br from-white/95 via-purple-50/90 to-purple-100/80 p-2.5 shadow-[0_25px_60px_rgba(137,97,216,0.45)] border-2 border-white/80 backdrop-blur-md overflow-hidden transform transition-all duration-300 hover:scale-105"
             style={{
               animation: 'ilms-float 3s ease-in-out infinite',
             }}
           >
-            {/* Logo Image */}
+            {/* Logo Image — Preloaded for Immediate Display */}
             <img
               src="/logo.png"
               alt="ILMS App Logo"
-              className="w-full h-full object-contain drop-shadow-lg rounded-[28px]"
+              loading="eager"
+              decoding="sync"
+              className="w-full h-full object-contain drop-shadow-lg rounded-[30px]"
             />
 
             {/* Diagonal Light Shimmer Sweep */}
@@ -395,8 +430,8 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
           </div>
 
           {/* Sparkle Twinkles */}
-          <Sparkles className="w-6 h-6 text-yellow-300 absolute -top-4 -right-4 animate-bounce shadow-sm drop-shadow-[0_0_10px_rgba(253,224,71,0.9)]" />
-          <Sparkles className="w-4 h-4 text-cyan-300 absolute -bottom-3 -left-3 animate-pulse drop-shadow-[0_0_8px_rgba(56,189,248,0.8)]" />
+          <Sparkles className="w-7 h-7 text-yellow-300 absolute -top-4 -right-4 animate-bounce shadow-sm drop-shadow-[0_0_12px_rgba(253,224,71,0.95)]" />
+          <Sparkles className="w-5 h-5 text-cyan-300 absolute -bottom-3 -left-3 animate-pulse drop-shadow-[0_0_10px_rgba(56,189,248,0.85)]" />
         </div>
 
         {/* Brand Title with Glowing Gradient */}
@@ -419,7 +454,7 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
           <span
             className={`px-2 py-0.5 rounded-md border flex items-center space-x-1 transition-all ${
               activeStage >= 1
-                ? 'bg-purple-900/60 border-purple-400/50 text-purple-200'
+                ? 'bg-purple-900/60 border-purple-400/50 text-purple-200 shadow-[0_0_8px_rgba(168,85,247,0.3)]'
                 : 'bg-slate-900/40 border-slate-700/50 text-slate-500'
             }`}
           >
@@ -429,7 +464,7 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
           <span
             className={`px-2 py-0.5 rounded-md border flex items-center space-x-1 transition-all ${
               activeStage >= 2
-                ? 'bg-cyan-900/60 border-cyan-400/50 text-cyan-200'
+                ? 'bg-cyan-900/60 border-cyan-400/50 text-cyan-200 shadow-[0_0_8px_rgba(56,189,248,0.3)]'
                 : 'bg-slate-900/40 border-slate-700/50 text-slate-500'
             }`}
           >
@@ -439,7 +474,7 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
           <span
             className={`px-2 py-0.5 rounded-md border flex items-center space-x-1 transition-all ${
               activeStage >= 3
-                ? 'bg-emerald-900/60 border-emerald-400/50 text-emerald-200'
+                ? 'bg-emerald-900/60 border-emerald-400/50 text-emerald-200 shadow-[0_0_8px_rgba(16,185,129,0.3)]'
                 : 'bg-slate-900/40 border-slate-700/50 text-slate-500'
             }`}
           >
@@ -479,24 +514,24 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
 
       {/* Embedded Animation Styles */}
       <style>{`
-        /* Explosive Pop-In with Spring Physics */
+        /* Instant Burst Pop-In with zero initial delay */
         .ilms-pop-in-box {
-          animation: ilms-pop-in 0.75s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+          animation: ilms-instant-pop 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
 
-        @keyframes ilms-pop-in {
+        @keyframes ilms-instant-pop {
           0% {
-            transform: scale(0.15) rotate(-10deg);
-            opacity: 0;
-            filter: blur(14px);
+            transform: scale(0.8) translateY(12px);
+            opacity: 0.95;
+            filter: blur(4px);
           }
           65% {
-            transform: scale(1.12) rotate(2deg);
+            transform: scale(1.08) translateY(-4px);
             opacity: 1;
             filter: blur(0px);
           }
           100% {
-            transform: scale(1) rotate(0deg);
+            transform: scale(1) translateY(0px);
             opacity: 1;
             filter: blur(0px);
           }
@@ -504,21 +539,21 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
 
         /* Shockwave expanding ring */
         .ilms-shockwave-ring {
-          animation: ilms-shockwave-anim 1.1s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+          animation: ilms-shockwave-anim 1s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
         }
 
         @keyframes ilms-shockwave-anim {
           0% {
-            width: 0px;
-            height: 0px;
+            width: 40px;
+            height: 40px;
             opacity: 1;
-            box-shadow: 0 0 30px #8961D8;
+            box-shadow: 0 0 35px #8961D8;
           }
           100% {
             width: 580px;
             height: 580px;
             opacity: 0;
-            box-shadow: 0 0 60px #38bdf8;
+            box-shadow: 0 0 70px #38bdf8;
           }
         }
 
