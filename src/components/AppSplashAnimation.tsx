@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Sparkles, Volume2, VolumeX, ShieldCheck, Cpu, Zap, Activity } from 'lucide-react';
+import { Sparkles, Volume2, VolumeX, ShieldCheck, Cpu, Zap } from 'lucide-react';
 
 interface AppSplashAnimationProps {
   onComplete?: () => void;
@@ -160,7 +160,7 @@ const INITIAL_BUBBLES: BubbleParticle[] = Array.from({ length: 16 }, (_, i) => (
 
 export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
   onComplete,
-  durationMs = 2500,
+  durationMs = 2750,
 }) => {
   const [isVisible, setIsVisible] = useState(true);
   const [isFadingOut, setIsFadingOut] = useState(false);
@@ -190,40 +190,40 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
     // Attempt instant audio play
     soundEngine.playCinematicIntro();
 
-    // Stage 1: Ledger check (550ms)
+    // Stage 1: Ledger check (520ms)
     const t1 = setTimeout(() => {
       setProgress(48);
       setActiveStage(1);
       setStatusText('Mounting Universal Inventory & Equipment Ledger...');
       soundEngine.playHoloTick(1);
-    }, 550);
+    }, 520);
 
-    // Stage 2: Security check (1150ms)
+    // Stage 2: Security check (1100ms)
     const t2 = setTimeout(() => {
       setProgress(82);
       setActiveStage(2);
       setStatusText('Synchronizing Multi-Laboratory Security Passports...');
       soundEngine.playHoloTick(2);
-    }, 1150);
+    }, 1100);
 
-    // Stage 3: Ready state (1800ms)
+    // Stage 3: Ready state (1750ms)
     const t3 = setTimeout(() => {
       setProgress(100);
       setActiveStage(3);
       setStatusText('ILMS Lab OS Online • Ready');
       soundEngine.playMajesticReady();
-    }, 1800);
+    }, 1750);
 
-    // Stage 4: Fade out
+    // Stage 4: Silky-smooth staged dissolve (starts 750ms before unmount)
     const tFade = setTimeout(() => {
       setIsFadingOut(true);
-    }, durationMs - 450);
+    }, durationMs - 750);
 
-    // Stage 5: Unmount
+    // Stage 5: Unmount cleanly AFTER the 750ms CSS transition finishes
     const tEnd = setTimeout(() => {
       setIsVisible(false);
       onComplete?.();
-    }, durationMs);
+    }, durationMs + 20);
 
     activeTimersRef.current = [t1, t2, t3, tFade, tEnd];
   }, [clearAllTimers, durationMs, onComplete]);
@@ -278,13 +278,14 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
     }
   };
 
+  // Buttery-smooth exit on skip (650ms fluid ease-out)
   const handleSkip = () => {
     clearAllTimers();
     setIsFadingOut(true);
     setTimeout(() => {
       setIsVisible(false);
       onComplete?.();
-    }, 180);
+    }, 650);
   };
 
   if (!isVisible) return null;
@@ -294,17 +295,22 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
       ref={containerRef}
       onClick={handleSkip}
       onMouseMove={handleMouseMove}
-      className={`fixed inset-0 z-[99999] flex flex-col items-center justify-center overflow-hidden cursor-pointer select-none transition-all duration-500 ease-out ${
+      className={`fixed inset-0 z-[99999] flex flex-col items-center justify-center overflow-hidden cursor-pointer select-none transform-gpu transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
         isFadingOut
-          ? 'opacity-0 scale-105 pointer-events-none'
-          : 'opacity-100 scale-100'
+          ? 'opacity-0 backdrop-blur-none pointer-events-none'
+          : 'opacity-100 backdrop-blur-md'
       }`}
       style={{
         background: 'radial-gradient(circle at 50% 38%, #20133a 0%, #0d071a 55%, #05030b 100%)',
+        willChange: 'opacity, backdrop-filter',
       }}
     >
       {/* Sound Mute / Unmute Floating Toggle */}
-      <div className="absolute top-5 right-5 z-20">
+      <div
+        className={`absolute top-5 right-5 z-20 transition-opacity duration-500 ease-out ${
+          isFadingOut ? 'opacity-0' : 'opacity-100'
+        }`}
+      >
         <button
           type="button"
           onClick={handleToggleSound}
@@ -325,7 +331,11 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
       </div>
 
       {/* Cybernetic Ambient Grid & Radar Sweep */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div
+        className={`absolute inset-0 overflow-hidden pointer-events-none transition-opacity duration-700 ease-out ${
+          isFadingOut ? 'opacity-0' : 'opacity-100'
+        }`}
+      >
         {/* Animated Glow Orbs */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[620px] h-[620px] bg-gradient-to-tr from-purple-600/35 via-[#8961D8]/25 to-cyan-400/25 rounded-full blur-[120px] animate-pulse" />
         <div
@@ -362,11 +372,16 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-purple-400/60 pointer-events-none ilms-shockwave-ring" />
       </div>
 
-      {/* Centerpiece Container with 3D Perspective */}
+      {/* Centerpiece Container with 3D Perspective & Fluid Staged Dissolve */}
       <div
-        className="relative z-10 flex flex-col items-center text-center px-4 max-w-sm sm:max-w-md"
+        className={`relative z-10 flex flex-col items-center text-center px-4 max-w-sm sm:max-w-md transform-gpu transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          isFadingOut
+            ? 'opacity-0 scale-105 -translate-y-3 filter blur-[6px]'
+            : 'opacity-100 scale-100 translate-y-0 filter blur-0'
+        }`}
         style={{
           perspective: '1000px',
+          willChange: 'transform, opacity, filter',
         }}
       >
         {/* Animated App Logo Wrapper with INSTANT Burst & Float */}
@@ -449,67 +464,74 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
           </p>
         </div>
 
-        {/* Dynamic Telemetry Status Badges */}
-        <div className="flex items-center justify-center gap-1.5 mb-4 text-[10px] font-mono">
-          <span
-            className={`px-2 py-0.5 rounded-md border flex items-center space-x-1 transition-all ${
-              activeStage >= 1
-                ? 'bg-purple-900/60 border-purple-400/50 text-purple-200 shadow-[0_0_8px_rgba(168,85,247,0.3)]'
-                : 'bg-slate-900/40 border-slate-700/50 text-slate-500'
-            }`}
-          >
-            <Cpu className="w-3 h-3" />
-            <span>LEDGER: OK</span>
-          </span>
-          <span
-            className={`px-2 py-0.5 rounded-md border flex items-center space-x-1 transition-all ${
-              activeStage >= 2
-                ? 'bg-cyan-900/60 border-cyan-400/50 text-cyan-200 shadow-[0_0_8px_rgba(56,189,248,0.3)]'
-                : 'bg-slate-900/40 border-slate-700/50 text-slate-500'
-            }`}
-          >
-            <ShieldCheck className="w-3 h-3" />
-            <span>PASSPORT: SECURE</span>
-          </span>
-          <span
-            className={`px-2 py-0.5 rounded-md border flex items-center space-x-1 transition-all ${
-              activeStage >= 3
-                ? 'bg-emerald-900/60 border-emerald-400/50 text-emerald-200 shadow-[0_0_8px_rgba(16,185,129,0.3)]'
-                : 'bg-slate-900/40 border-slate-700/50 text-slate-500'
-            }`}
-          >
-            <Zap className="w-3 h-3" />
-            <span>ONLINE</span>
-          </span>
-        </div>
-
-        {/* Progress Bar Container */}
-        <div className="w-64 sm:w-72 space-y-2">
-          {/* Progress Bar Track */}
-          <div className="h-2 w-full bg-slate-900/80 rounded-full overflow-hidden p-0.5 border border-purple-500/40 backdrop-blur-sm shadow-inner">
-            <div
-              className="h-full bg-gradient-to-r from-[#18BDF5] via-[#BCA0F5] to-[#8961D8] rounded-full transition-all duration-300 ease-out shadow-[0_0_14px_#8961D8]"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-
-          {/* Status Label with Pulsing Lab Activity Dot */}
-          <div className="flex items-center justify-between text-[11px] text-purple-200/90 font-medium">
-            <span className="truncate pr-2 font-mono text-[10px] flex items-center space-x-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping inline-block" />
-              <span>{statusText}</span>
+        {/* Dynamic Telemetry Status Badges & Progress Bar with Graceful Sub-Fade */}
+        <div
+          className={`w-full flex flex-col items-center transition-all duration-500 ease-out ${
+            isFadingOut ? 'opacity-0 translate-y-3' : 'opacity-100 translate-y-0'
+          }`}
+        >
+          {/* Dynamic Telemetry Status Badges */}
+          <div className="flex items-center justify-center gap-1.5 mb-4 text-[10px] font-mono">
+            <span
+              className={`px-2 py-0.5 rounded-md border flex items-center space-x-1 transition-all ${
+                activeStage >= 1
+                  ? 'bg-purple-900/60 border-purple-400/50 text-purple-200 shadow-[0_0_8px_rgba(168,85,247,0.3)]'
+                  : 'bg-slate-900/40 border-slate-700/50 text-slate-500'
+              }`}
+            >
+              <Cpu className="w-3 h-3" />
+              <span>LEDGER: OK</span>
             </span>
-            <span className="font-mono font-bold text-cyan-300 text-[10px] shrink-0">
-              {progress}%
+            <span
+              className={`px-2 py-0.5 rounded-md border flex items-center space-x-1 transition-all ${
+                activeStage >= 2
+                  ? 'bg-cyan-900/60 border-cyan-400/50 text-cyan-200 shadow-[0_0_8px_rgba(56,189,248,0.3)]'
+                  : 'bg-slate-900/40 border-slate-700/50 text-slate-500'
+              }`}
+            >
+              <ShieldCheck className="w-3 h-3" />
+              <span>PASSPORT: SECURE</span>
+            </span>
+            <span
+              className={`px-2 py-0.5 rounded-md border flex items-center space-x-1 transition-all ${
+                activeStage >= 3
+                  ? 'bg-emerald-900/60 border-emerald-400/50 text-emerald-200 shadow-[0_0_8px_rgba(16,185,129,0.3)]'
+                  : 'bg-slate-900/40 border-slate-700/50 text-slate-500'
+              }`}
+            >
+              <Zap className="w-3 h-3" />
+              <span>ONLINE</span>
             </span>
           </div>
-        </div>
 
-        {/* Skip Prompt */}
-        <p className="mt-7 text-[11px] text-purple-400/60 hover:text-purple-200 transition-colors font-medium flex items-center justify-center space-x-1">
-          <span>Click anywhere to enter</span>
-          <span className="text-cyan-300">→</span>
-        </p>
+          {/* Progress Bar Container */}
+          <div className="w-64 sm:w-72 space-y-2">
+            {/* Progress Bar Track */}
+            <div className="h-2 w-full bg-slate-900/80 rounded-full overflow-hidden p-0.5 border border-purple-500/40 backdrop-blur-sm shadow-inner">
+              <div
+                className="h-full bg-gradient-to-r from-[#18BDF5] via-[#BCA0F5] to-[#8961D8] rounded-full transition-all duration-300 ease-out shadow-[0_0_14px_#8961D8]"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+
+            {/* Status Label with Pulsing Lab Activity Dot */}
+            <div className="flex items-center justify-between text-[11px] text-purple-200/90 font-medium">
+              <span className="truncate pr-2 font-mono text-[10px] flex items-center space-x-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping inline-block" />
+                <span>{statusText}</span>
+              </span>
+              <span className="font-mono font-bold text-cyan-300 text-[10px] shrink-0">
+                {progress}%
+              </span>
+            </div>
+          </div>
+
+          {/* Skip Prompt */}
+          <p className="mt-7 text-[11px] text-purple-400/60 hover:text-purple-200 transition-colors font-medium flex items-center justify-center space-x-1">
+            <span>Click anywhere to enter</span>
+            <span className="text-cyan-300">→</span>
+          </p>
+        </div>
       </div>
 
       {/* Embedded Animation Styles */}
