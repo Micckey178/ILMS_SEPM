@@ -46,6 +46,8 @@ import { doc, setDoc } from 'firebase/firestore';
 import { usePWA } from '../hooks/usePWA';
 import { QRCodeSVG } from 'qrcode.react';
 
+declare const __LOCAL_LAN_IP__: string | undefined;
+
 export const WelcomePage: React.FC = () => {
   const { allUsers, switchUser, currentUser, isFirebaseActive } = useAuth();
   const { isInstallable, isInstalled, promptInstall } = usePWA();
@@ -82,11 +84,28 @@ export const WelcomePage: React.FC = () => {
 
   const [hostIp, setHostIp] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('ilms_host_ip') || '192.168.29.29';
+      const stored = localStorage.getItem('ilms_host_ip');
+      // Discard stale hardcoded IP 192.168.29.29
+      if (stored && stored !== '192.168.29.29') return stored;
     }
-    return '192.168.29.29';
+    return typeof __LOCAL_LAN_IP__ !== 'undefined' ? __LOCAL_LAN_IP__ : '192.168.42.39';
   });
   const [copiedLink, setCopiedLink] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/network-ip')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.ip) {
+          const stored = localStorage.getItem('ilms_host_ip');
+          if (!stored || stored === '192.168.29.29') {
+            setHostIp(data.ip);
+            localStorage.setItem('ilms_host_ip', data.ip);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const currentPort = typeof window !== 'undefined' && window.location.port ? window.location.port : '5173';
   const mobileInstallUrl = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
@@ -1499,18 +1518,18 @@ export const WelcomePage: React.FC = () => {
                       title="Current computer IP for phone access"
                     />
                   </div>
-                  <div className="flex items-center gap-1.5 text-[10px]">
+                  <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
                     <span className="text-[#71667D] font-medium">Quick switch:</span>
                     <button
                       type="button"
-                      onClick={() => handleUpdateHostIp('192.168.29.29')}
+                      onClick={() => handleUpdateHostIp('192.168.42.39')}
                       className={`px-2 py-0.5 rounded-md font-mono transition ${
-                        hostIp === '192.168.29.29'
+                        hostIp === '192.168.42.39'
                           ? 'bg-[#8961D8] text-white font-bold'
                           : 'bg-[#F0E9FF] text-[#8961D8] hover:bg-[#E2D2FE]'
                       }`}
                     >
-                      192.168.29.29 (Wi-Fi)
+                      192.168.42.39 (Current Wi-Fi)
                     </button>
                     <button
                       type="button"
