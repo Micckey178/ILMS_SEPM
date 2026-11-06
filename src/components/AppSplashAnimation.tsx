@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Sparkles, Volume2, VolumeX, ShieldCheck, Cpu, Zap } from 'lucide-react';
+import { Sparkles, Volume2, VolumeX, ShieldCheck, Cpu, Zap, RefreshCw } from 'lucide-react';
 
 interface AppSplashAnimationProps {
   onComplete?: () => void;
@@ -7,9 +7,9 @@ interface AppSplashAnimationProps {
 }
 
 // Global helper to trigger the splash animation whenever a user enters the app
-export const triggerAppSplash = () => {
+export const triggerAppSplash = (mode: 'launch' | 'welcome-back' = 'launch') => {
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('ilms:trigger-splash'));
+    window.dispatchEvent(new CustomEvent('ilms:trigger-splash', { detail: { mode } }));
   }
 };
 
@@ -77,7 +77,6 @@ class CinematicSoundEngine {
       whooshOsc.stop(now + 0.6);
 
       // 3. ASCENDING CHORD HARMONIC FLOURISH (0.12s -> 0.45s)
-      // Rapid shimmering arpeggio that launches into the chord
       const arpNotes = [440.0, 554.37, 659.25, 880.0]; // A4, C#5, E5, A5
       arpNotes.forEach((freq, idx) => {
         const t = now + 0.1 + idx * 0.05;
@@ -94,7 +93,6 @@ class CinematicSoundEngine {
       });
 
       // 4. MAJESTIC RESOLUTION CHORD WITH CRYSTAL RING (0.35s -> 2.2s)
-      // Rich polyphonic major 9th chord pad that rings out together in one continuous harmony
       const grandChord = [554.37, 659.25, 830.61, 987.77, 1318.51];
       grandChord.forEach((freq, idx) => {
         const osc = ctx.createOscillator();
@@ -146,12 +144,18 @@ const INITIAL_BUBBLES: BubbleParticle[] = Array.from({ length: 16 }, (_, i) => (
   delay: Math.random() * 1.5,
 }));
 
+// Thresholds for detecting returning user:
+// 45 seconds of tab hiding or 3 minutes of inactive time
+const AWAY_THRESHOLD_MS = 45 * 1000;
+const INACTIVITY_THRESHOLD_MS = 180 * 1000;
+
 export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
   onComplete,
   durationMs = 2750,
 }) => {
   const [isVisible, setIsVisible] = useState(true);
   const [isFadingOut, setIsFadingOut] = useState(false);
+  const [splashMode, setSplashMode] = useState<'launch' | 'welcome-back'>('launch');
   const [progress, setProgress] = useState(16);
   const [statusText, setStatusText] = useState('Initializing Laboratory Operating System...');
   const [activeStage, setActiveStage] = useState(0);
@@ -159,6 +163,7 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const activeTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const lastActiveRef = useRef<number>(Date.now());
 
   // Clear running timers
   const clearAllTimers = useCallback(() => {
@@ -167,55 +172,138 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
   }, []);
 
   // Execution timeline for the opening animation
-  const runAnimationSequence = useCallback(() => {
-    clearAllTimers();
-    setIsVisible(true);
-    setIsFadingOut(false);
-    setProgress(16);
-    setActiveStage(0);
-    setStatusText('Initializing Laboratory Operating System...');
+  const runAnimationSequence = useCallback(
+    (mode: 'launch' | 'welcome-back' = 'launch') => {
+      clearAllTimers();
+      setSplashMode(mode);
+      setIsVisible(true);
+      setIsFadingOut(false);
+      setProgress(18);
+      setActiveStage(0);
 
-    // ONE-SHOT CINEMATIC THEME (Plays once seamlessly from frame 0)
-    soundEngine.playOneShotSignature();
+      const isWelcomeBack = mode === 'welcome-back';
+      setStatusText(
+        isWelcomeBack
+          ? 'Welcome Back • Resuming Laboratory Session...'
+          : 'Initializing Laboratory Operating System...'
+      );
 
-    // Stage 1: Visual Ledger check (520ms)
-    const t1 = setTimeout(() => {
-      setProgress(48);
-      setActiveStage(1);
-      setStatusText('Mounting Universal Inventory & Equipment Ledger...');
-    }, 520);
+      // ONE-SHOT CINEMATIC THEME (Plays once seamlessly from frame 0)
+      soundEngine.playOneShotSignature();
 
-    // Stage 2: Visual Security check (1100ms)
-    const t2 = setTimeout(() => {
-      setProgress(82);
-      setActiveStage(2);
-      setStatusText('Synchronizing Multi-Laboratory Security Passports...');
-    }, 1100);
+      // Stage 1: Visual Ledger check (520ms)
+      const t1 = setTimeout(() => {
+        setProgress(48);
+        setActiveStage(1);
+        setStatusText(
+          isWelcomeBack
+            ? 'Restoring Encrypted Active State & Ledger...'
+            : 'Mounting Universal Inventory & Equipment Ledger...'
+        );
+      }, 520);
 
-    // Stage 3: Visual Ready state (1750ms)
-    const t3 = setTimeout(() => {
-      setProgress(100);
-      setActiveStage(3);
-      setStatusText('ILMS Lab OS Online • Ready');
-    }, 1750);
+      // Stage 2: Visual Security check (1100ms)
+      const t2 = setTimeout(() => {
+        setProgress(82);
+        setActiveStage(2);
+        setStatusText(
+          isWelcomeBack
+            ? 'Revalidating Multi-Laboratory Security Passports...'
+            : 'Synchronizing Multi-Laboratory Security Passports...'
+        );
+      }, 1100);
 
-    // Stage 4: Silky-smooth staged dissolve (starts 750ms before unmount)
-    const tFade = setTimeout(() => {
-      setIsFadingOut(true);
-    }, durationMs - 750);
+      // Stage 3: Visual Ready state (1750ms)
+      const t3 = setTimeout(() => {
+        setProgress(100);
+        setActiveStage(3);
+        setStatusText(
+          isWelcomeBack
+            ? 'ILMS Lab OS Session Restored • Ready'
+            : 'ILMS Lab OS Online • Ready'
+        );
+      }, 1750);
 
-    // Stage 5: Unmount cleanly AFTER the 750ms CSS transition finishes
-    const tEnd = setTimeout(() => {
-      setIsVisible(false);
-      onComplete?.();
-    }, durationMs + 20);
+      // Stage 4: Silky-smooth staged dissolve (starts 750ms before unmount)
+      const tFade = setTimeout(() => {
+        setIsFadingOut(true);
+      }, durationMs - 750);
 
-    activeTimersRef.current = [t1, t2, t3, tFade, tEnd];
-  }, [clearAllTimers, durationMs, onComplete]);
+      // Stage 5: Unmount cleanly AFTER the 750ms CSS transition finishes
+      const tEnd = setTimeout(() => {
+        setIsVisible(false);
+        onComplete?.();
+      }, durationMs + 20);
 
-  // Run on mount (every time user opens/refreshes the app) AND when triggered via ilms:trigger-splash
+      activeTimersRef.current = [t1, t2, t3, tFade, tEnd];
+    },
+    [clearAllTimers, durationMs, onComplete]
+  );
+
+  // Monitor user activity and detect "returning to the app"
   useEffect(() => {
-    runAnimationSequence();
+    // Initial check on page load: check how long since last recorded session
+    const lastStored = localStorage.getItem('ilms_last_active_time');
+    const now = Date.now();
+    lastActiveRef.current = now;
+    localStorage.setItem('ilms_last_active_time', now.toString());
+
+    if (lastStored) {
+      const diff = now - Number(lastStored);
+      if (diff > AWAY_THRESHOLD_MS) {
+        runAnimationSequence('welcome-back');
+      } else {
+        runAnimationSequence('launch');
+      }
+    } else {
+      runAnimationSequence('launch');
+    }
+
+    // Update last-active timestamp when user interacts
+    const markActive = () => {
+      const current = Date.now();
+      // Throttle localStorage writes to once every 10 seconds
+      if (current - lastActiveRef.current > 10000) {
+        lastActiveRef.current = current;
+        localStorage.setItem('ilms_last_active_time', current.toString());
+      }
+    };
+
+    window.addEventListener('mousemove', markActive, { passive: true });
+    window.addEventListener('keydown', markActive, { passive: true });
+    window.addEventListener('touchstart', markActive, { passive: true });
+
+    // Track when user leaves the tab vs returns to the tab
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        const timeHidden = Date.now();
+        localStorage.setItem('ilms_tab_left_time', timeHidden.toString());
+        localStorage.setItem('ilms_last_active_time', timeHidden.toString());
+      } else if (document.visibilityState === 'visible') {
+        const nowReturn = Date.now();
+        const leftTime = Number(localStorage.getItem('ilms_tab_left_time') || lastActiveRef.current);
+        const timeAway = nowReturn - leftTime;
+
+        // If away for more than AWAY_THRESHOLD_MS (45s), celebrate return!
+        if (timeAway >= AWAY_THRESHOLD_MS) {
+          localStorage.setItem('ilms_last_active_time', nowReturn.toString());
+          runAnimationSequence('welcome-back');
+        }
+      }
+    };
+
+    // Track window focus (switching back from another window/app)
+    const handleWindowFocus = () => {
+      const nowFocus = Date.now();
+      const last = Number(localStorage.getItem('ilms_last_active_time') || lastActiveRef.current);
+      if (nowFocus - last >= AWAY_THRESHOLD_MS) {
+        localStorage.setItem('ilms_last_active_time', nowFocus.toString());
+        runAnimationSequence('welcome-back');
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleWindowFocus);
 
     // Browser audio unlock on ANY early user interaction
     const unlockAudio = () => {
@@ -228,13 +316,22 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
     window.addEventListener('pointerdown', unlockAudio, { once: true });
     window.addEventListener('keydown', unlockAudio, { once: true });
 
-    const handleExternalTrigger = () => {
-      runAnimationSequence();
+    // Custom programmatic trigger
+    const handleExternalTrigger = (e: Event) => {
+      const customEvent = e as CustomEvent<{ mode?: 'launch' | 'welcome-back' }>;
+      const mode = customEvent.detail?.mode || 'launch';
+      runAnimationSequence(mode);
     };
 
     window.addEventListener('ilms:trigger-splash', handleExternalTrigger);
+
     return () => {
       clearAllTimers();
+      window.removeEventListener('mousemove', markActive);
+      window.removeEventListener('keydown', markActive);
+      window.removeEventListener('touchstart', markActive);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleWindowFocus);
       window.removeEventListener('pointerdown', unlockAudio);
       window.removeEventListener('keydown', unlockAudio);
       window.removeEventListener('ilms:trigger-splash', handleExternalTrigger);
@@ -441,11 +538,13 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
               ILMS
             </span>
             <span className="px-2.5 py-0.5 rounded-full bg-purple-500/30 border border-purple-400/50 text-[10px] font-mono font-extrabold uppercase tracking-widest text-cyan-200 shadow-[0_0_10px_rgba(137,97,216,0.3)]">
-              Lab OS
+              {splashMode === 'welcome-back' ? 'Welcome Back' : 'Lab OS'}
             </span>
           </div>
           <p className="font-mono text-[11px] sm:text-xs uppercase tracking-[0.25em] text-purple-300/80 font-bold">
-            Inventory & Lab Management System
+            {splashMode === 'welcome-back'
+              ? 'Multi-Lab Session Reconnected'
+              : 'Inventory & Lab Management System'}
           </p>
         </div>
 
@@ -464,8 +563,8 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
                   : 'bg-slate-900/40 border-slate-700/50 text-slate-500'
               }`}
             >
-              <Cpu className="w-3 h-3" />
-              <span>LEDGER: OK</span>
+              {splashMode === 'welcome-back' ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Cpu className="w-3 h-3" />}
+              <span>{splashMode === 'welcome-back' ? 'SESSION: RESTORED' : 'LEDGER: OK'}</span>
             </span>
             <span
               className={`px-2 py-0.5 rounded-md border flex items-center space-x-1 transition-all ${
@@ -513,7 +612,7 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
 
           {/* Skip Prompt */}
           <p className="mt-7 text-[11px] text-purple-400/60 hover:text-purple-200 transition-colors font-medium flex items-center justify-center space-x-1">
-            <span>Click anywhere to enter</span>
+            <span>Click anywhere to resume</span>
             <span className="text-cyan-300">→</span>
           </p>
         </div>
