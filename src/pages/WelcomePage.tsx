@@ -423,7 +423,7 @@ export const WelcomePage: React.FC = () => {
             }}
           >
             <img
-              src="/logo.png"
+              src="/app-logo-v2.png"
               alt="ILMS Logo"
               className="w-9 h-9 sm:w-11 sm:h-11 rounded-2xl object-contain shadow-xs shrink-0 hover:scale-105 transition-transform"
             />
@@ -1348,7 +1348,7 @@ export const WelcomePage: React.FC = () => {
             <div className="p-5 border-b border-[#E9DDF1] flex items-center justify-between bg-gradient-to-r from-[#FFF8F2] via-[#F0E9FF] to-[#FBE5EF]">
               <div className="flex items-center space-x-3">
                 <img
-                  src="/logo.png"
+                  src="/app-logo-v2.png"
                   alt="ILMS App Logo"
                   className="w-10 h-10 rounded-2xl object-contain shadow-xs shrink-0"
                 />
@@ -1375,7 +1375,7 @@ export const WelcomePage: React.FC = () => {
               {/* App Summary Card */}
               <div className="p-4 rounded-2xl bg-[#FFF8F2] border border-[#E9DDF1] flex items-center space-x-3.5">
                 <img
-                  src="/logo.png"
+                  src="/app-logo-v2.png"
                   alt="ILMS Logo"
                   className="w-12 h-12 rounded-2xl object-contain shadow-xs shrink-0"
                 />

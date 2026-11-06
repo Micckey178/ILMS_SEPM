@@ -1,13 +1,15 @@
-const CACHE_NAME = 'ilms-pwa-v2';
+const CACHE_NAME = 'ilms-pwa-v5';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
   '/offline.html',
+  '/app-logo-v2.png',
+  '/logo.png',
   '/pwa-192x192.png',
   '/pwa-512x512.png',
-  '/pwa-192x192.svg',
-  '/pwa-512x512.svg'
+  '/favicon.png',
+  '/favicon.ico'
 ];
 
 self.addEventListener('install', (event) => {

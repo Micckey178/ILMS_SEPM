@@ -494,7 +494,7 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
           >
             {/* Logo Image — Preloaded for Immediate Display */}
             <img
-              src="/logo.png"
+              src="/app-logo-v2.png"
               alt="ILMS App Logo"
               loading="eager"
               decoding="sync"

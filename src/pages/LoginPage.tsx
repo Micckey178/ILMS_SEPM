@@ -242,7 +242,7 @@ export const LoginPage: React.FC = () => {
         {/* Top Header Logo */}
         <div className="relative z-10 flex items-center space-x-3">
           <img
-            src="/logo.png"
+            src="/app-logo-v2.png"
             alt="ILMS Logo"
             className="w-12 h-12 rounded-2xl bg-white/90 p-1 border border-white/40 shadow-lg object-contain"
           />

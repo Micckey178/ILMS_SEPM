@@ -166,7 +166,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         <div className="flex items-center justify-between p-4 border-b border-[#E9DDF1] lg:hidden">
           <div className="flex items-center space-x-2.5">
             <img
-              src="/logo.png"
+              src="/app-logo-v2.png"
               alt="ILMS Logo"
               className="w-8 h-8 rounded-xl object-contain shadow-xs"
             />

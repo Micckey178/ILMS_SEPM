@@ -214,7 +214,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onOpenQRScanner })
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 bg-white border border-[#E9DDF1] rounded-3xl shadow-sm">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#BCA0F5] to-[#FFD2BF] overflow-hidden flex items-center justify-center shadow-sm">
-            <img src="/mascot.png" alt="Mascot" className="w-full h-full object-contain scale-120" />
+            <img src="/app-logo-v2.png" alt="ILMS Logo" className="w-full h-full object-contain p-0.5" />
           </div>
           <div>
             <h2 className="font-heading font-black text-base text-[#332B40]">
