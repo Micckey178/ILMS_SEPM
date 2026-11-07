@@ -239,14 +239,18 @@ export const LoginPage: React.FC = () => {
         <div className="absolute top-10 right-10 w-64 h-64 rounded-full bg-white/10 blur-2xl pointer-events-none animate-float-slow" />
         <div className="absolute bottom-12 left-10 w-72 h-72 rounded-full bg-blue-400/20 blur-3xl pointer-events-none animate-float-reverse" />
 
-        {/* Top Header Logo with Interactive Pop Aura */}
-        <div className="relative z-10 flex items-center space-x-3.5 group cursor-pointer">
+        {/* Top Header Logo with Interactive Pop Aura & Replay Splash */}
+        <div
+          onClick={() => triggerAppSplash('launch')}
+          className="relative z-10 flex items-center space-x-3.5 group cursor-pointer"
+          title="Click to replay high-tech holographic splash"
+        >
           <div className="relative">
-            <div className="absolute -inset-1.5 rounded-2xl bg-gradient-to-r from-cyan-400 via-pink-400 to-purple-400 opacity-60 blur-xs group-hover:opacity-100 group-hover:scale-115 transition duration-300" />
+            <div className="absolute -inset-1.5 rounded-2xl bg-gradient-to-r from-cyan-400 via-pink-400 to-purple-400 opacity-60 blur-xs group-hover:opacity-100 group-hover:scale-125 transition duration-300 animate-pulse" />
             <img
               src="/app-logo-v2.png"
               alt="ILMS Logo"
-              className="relative w-12 h-12 rounded-2xl bg-white/95 p-1 border border-white/60 shadow-xl object-contain transition-all duration-300 ease-out group-hover:scale-115 group-hover:rotate-6 group-active:scale-95"
+              className="relative w-12 h-12 rounded-2xl bg-white/95 p-1 border border-white/60 shadow-xl object-contain transition-all duration-300 ease-out group-hover:scale-120 group-hover:rotate-6 group-active:scale-95"
             />
           </div>
           <div>

@@ -140,6 +140,26 @@ const INITIAL_BUBBLES: BubbleParticle[] = Array.from({ length: 16 }, (_, i) => (
   delay: Math.random() * 1.5,
 }));
 
+// Imploding Quantum Filaments that converge into the singularity before the big burst pop
+interface ImplodingFilament {
+  id: number;
+  x: number;
+  y: number;
+  delay: number;
+}
+
+const IMPLODING_FILAMENTS: ImplodingFilament[] = Array.from({ length: 12 }, (_, i) => {
+  const angle = (i * 360) / 12;
+  const rad = (angle * Math.PI) / 180;
+  const startDist = 185;
+  return {
+    id: i,
+    x: Math.round(Math.cos(rad) * startDist),
+    y: Math.round(Math.sin(rad) * startDist),
+    delay: (i % 4) * 0.02,
+  };
+});
+
 // Cyber burst sparks that shoot radially outward when the logo pops out of nowhere
 interface BurstSpark {
   id: number;
@@ -150,18 +170,18 @@ interface BurstSpark {
   delay: number;
 }
 
-const BURST_SPARKS: BurstSpark[] = Array.from({ length: 16 }, (_, i) => {
-  const angle = (i * 360) / 16 + (i % 2 === 0 ? 5 : -5);
+const BURST_SPARKS: BurstSpark[] = Array.from({ length: 24 }, (_, i) => {
+  const angle = (i * 360) / 24 + (i % 2 === 0 ? 4 : -4);
   const rad = (angle * Math.PI) / 180;
-  const dist = 95 + (i % 3) * 35; // 95px, 130px, 165px
-  const colors = ['#38BDF8', '#BCA0F5', '#F472B6', '#FDE047', '#34D399', '#C084FC'];
+  const dist = 100 + (i % 4) * 32; // 100px, 132px, 164px, 196px
+  const colors = ['#38BDF8', '#BCA0F5', '#F472B6', '#FDE047', '#34D399', '#C084FC', '#67E8F9', '#F43F5E'];
   return {
     id: i,
     x: Math.round(Math.cos(rad) * dist),
     y: Math.round(Math.sin(rad) * dist),
     color: colors[i % colors.length],
     size: 4 + (i % 3) * 2.5,
-    delay: (i % 4) * 0.02,
+    delay: (i % 5) * 0.025,
   };
 });
 
@@ -487,17 +507,70 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
       >
         {/* Animated App Logo Stage with Quantum Pop-Out-Of-Nowhere */}
         <div key={animKey} className="relative mb-6 flex items-center justify-center">
-          {/* A. Quantum Singularity Flash (Explodes from zero into white-hot neon aura) */}
+          {/* Phase 1: Imploding Laser Filaments (Converge into Singularity in 0.18s) */}
+          {IMPLODING_FILAMENTS.map((fil) => (
+            <div
+              key={fil.id}
+              className="absolute top-1/2 left-1/2 pointer-events-none ilms-filament-implode"
+              style={{
+                '--fx': `${fil.x}px`,
+                '--fy': `${fil.y}px`,
+                animationDelay: `${fil.delay}s`,
+              } as React.CSSProperties}
+            />
+          ))}
+
+          {/* Phase 2: Quantum Singularity Flare (Blinds at epicenter t=0) */}
           <div className="absolute top-1/2 left-1/2 rounded-full pointer-events-none ilms-singularity-flash" />
 
-          {/* B. Hexagonal Quantum Shockwave Ring matching the new isometric badge geometry */}
+          {/* Phase 3: Triple Concentric Hexagonal Cyber Shields */}
+          {/* Outer Rotating Telemetry Hexagon with Corner Vertices */}
+          <div className="absolute top-1/2 left-1/2 pointer-events-none w-64 h-64 sm:w-72 sm:h-72 ilms-hex-shield-outer">
+            <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_14px_rgba(56,189,248,0.45)]">
+              <polygon
+                points="50,2 93,25 93,75 50,98 7,75 7,25"
+                fill="none"
+                stroke="rgba(56,189,248,0.4)"
+                strokeWidth="1.2"
+                strokeDasharray="4 8"
+              />
+              <circle cx="50" cy="2" r="1.5" fill="#38BDF8" />
+              <circle cx="93" cy="25" r="1.5" fill="#38BDF8" />
+              <circle cx="93" cy="75" r="1.5" fill="#38BDF8" />
+              <circle cx="50" cy="98" r="1.5" fill="#38BDF8" />
+              <circle cx="7" cy="75" r="1.5" fill="#38BDF8" />
+              <circle cx="7" cy="25" r="1.5" fill="#38BDF8" />
+            </svg>
+          </div>
+
+          {/* Middle Counter-Rotating Violet Energy Hexagon */}
+          <div className="absolute top-1/2 left-1/2 pointer-events-none w-52 h-52 sm:w-60 sm:h-60 ilms-hex-shield-mid">
+            <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_18px_rgba(188,160,245,0.65)]">
+              <polygon
+                points="50,4 92,26 92,74 50,96 8,74 8,26"
+                fill="none"
+                stroke="url(#hexMidGrad)"
+                strokeWidth="1.8"
+                strokeDasharray="14 4"
+              />
+              <defs>
+                <linearGradient id="hexMidGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#C084FC" />
+                  <stop offset="50%" stopColor="#38BDF8" />
+                  <stop offset="100%" stopColor="#F472B6" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+
+          {/* Inner High-Speed Burst Hexagon Wave */}
           <div className="absolute top-1/2 left-1/2 pointer-events-none w-48 h-48 sm:w-56 sm:h-56 ilms-hex-shockwave">
-            <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_16px_#38bdf8]">
+            <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_20px_#38bdf8]">
               <polygon
                 points="50,3 93,26 93,74 50,97 7,74 7,26"
                 fill="none"
                 stroke="url(#hexShockGrad)"
-                strokeWidth="2.5"
+                strokeWidth="2.8"
                 strokeDasharray="6 3"
               />
               <defs>
@@ -510,11 +583,11 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
             </svg>
           </div>
 
-          {/* C. Dual Concentric Ripple Shockwaves */}
+          {/* Dual Concentric Ripple Shockwaves */}
           <div className="absolute top-1/2 left-1/2 rounded-full border-2 border-cyan-400/80 pointer-events-none ilms-shockwave-ring" />
           <div className="absolute top-1/2 left-1/2 rounded-full border border-purple-400/60 pointer-events-none ilms-shockwave-ring-delayed" />
 
-          {/* D. Starburst Flying Cyber Sparks Erupting Radially */}
+          {/* 24 Flying Radial Cyber Sparks */}
           {BURST_SPARKS.map((spark) => (
             <div
               key={spark.id}
@@ -530,7 +603,7 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
             />
           ))}
 
-          {/* E. 3D Tilt Wrapper */}
+          {/* 3D Tilt Wrapper */}
           <div
             className="relative group cursor-pointer"
             style={{
@@ -545,19 +618,19 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
             title="Click to re-pop logo"
           >
             {/* Outer Pulsing Neon Aura */}
-            <div className="absolute -inset-5 rounded-[44px] bg-gradient-to-r from-purple-500 via-[#8961D8] to-cyan-400 opacity-60 blur-2xl animate-pulse" />
+            <div className="absolute -inset-6 rounded-[48px] bg-gradient-to-r from-purple-500 via-[#8961D8] to-cyan-400 opacity-70 blur-2xl animate-pulse" />
 
             {/* Luminous Orbital Particle Ring (Clockwise) */}
             <div
-              className="absolute -inset-7 rounded-full border-2 border-dashed border-purple-400/40 border-t-cyan-300 border-r-pink-400 pointer-events-none animate-spin"
+              className="absolute -inset-8 rounded-full border-2 border-dashed border-purple-400/40 border-t-cyan-300 border-r-pink-400 pointer-events-none animate-spin"
               style={{ animationDuration: '4.5s', animationTimingFunction: 'linear' }}
             >
-              <div className="w-3 h-3 rounded-full bg-cyan-300 shadow-[0_0_14px_#38bdf8] absolute top-1 left-1/2 -translate-x-1/2" />
+              <div className="w-3.5 h-3.5 rounded-full bg-cyan-300 shadow-[0_0_16px_#38bdf8] absolute top-1 left-1/2 -translate-x-1/2" />
             </div>
 
             {/* Secondary Reverse Orbital Ring (Counter-Clockwise) */}
             <div
-              className="absolute -inset-10 rounded-full border border-purple-300/25 border-b-cyan-400/50 pointer-events-none animate-spin"
+              className="absolute -inset-11 rounded-full border border-purple-300/25 border-b-cyan-400/50 pointer-events-none animate-spin"
               style={{ animationDuration: '8.5s', animationDirection: 'reverse' }}
             >
               <div className="w-2.5 h-2.5 rounded-full bg-pink-400 shadow-[0_0_12px_#f472b6] absolute bottom-1 right-1/4" />
@@ -573,7 +646,16 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
                 alt="ILMS App Logo"
                 loading="eager"
                 decoding="sync"
-                className="w-full h-full object-contain drop-shadow-lg rounded-[30px]"
+                className="w-full h-full object-contain drop-shadow-xl rounded-[30px]"
+              />
+
+              {/* Dynamic Interactive Specular Holographic Glare (Moves with mouse tilt) */}
+              <div
+                className="absolute inset-0 pointer-events-none rounded-[36px] transition-all duration-150"
+                style={{
+                  background: `radial-gradient(circle at ${50 - tilt.y * 3.5}% ${50 - tilt.x * 3.5}%, rgba(255,255,255,0.75) 0%, rgba(255,255,255,0.2) 30%, transparent 65%)`,
+                  mixBlendMode: 'overlay',
+                }}
               />
 
               {/* Diagonal Light Shimmer Sweep */}
@@ -586,7 +668,7 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
 
               {/* High-Tech Cyan Scanline Laser */}
               <div
-                className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_8px_#38bdf8] pointer-events-none"
+                className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_10px_#38bdf8] pointer-events-none"
                 style={{
                   animation: 'ilms-laser-scan 2.6s infinite ease-in-out',
                 }}
@@ -688,7 +770,58 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
 
       {/* Embedded Animation Styles */}
       <style>{`
-        /* 1. Singularity Flash (White-hot quantum flare bursting at t=0) */
+        /* 1. Imploding Laser Filaments */
+        .ilms-filament-implode {
+          width: 8px;
+          height: 8px;
+          border-radius: 9999px;
+          background: #38bdf8;
+          box-shadow: 0 0 12px #38bdf8, 0 0 24px #ffffff;
+          animation: ilms-implode-anim 0.22s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        @keyframes ilms-implode-anim {
+          0% {
+            transform: translate(-50%, -50%) translate(var(--fx), var(--fy)) scale(1.6);
+            opacity: 0.95;
+          }
+          100% {
+            transform: translate(-50%, -50%) translate(0, 0) scale(0.1);
+            opacity: 0;
+          }
+        }
+
+        /* Outer Hexagonal Shield Continuous Orbit */
+        .ilms-hex-shield-outer {
+          transform: translate(-50%, -50%);
+          animation: ilms-hex-spin 26s linear infinite;
+        }
+
+        @keyframes ilms-hex-spin {
+          0% {
+            transform: translate(-50%, -50%) rotate(0deg);
+          }
+          100% {
+            transform: translate(-50%, -50%) rotate(360deg);
+          }
+        }
+
+        /* Middle Hexagonal Shield Counter-Orbit */
+        .ilms-hex-shield-mid {
+          transform: translate(-50%, -50%);
+          animation: ilms-hex-spin-rev 18s linear infinite;
+        }
+
+        @keyframes ilms-hex-spin-rev {
+          0% {
+            transform: translate(-50%, -50%) rotate(360deg);
+          }
+          100% {
+            transform: translate(-50%, -50%) rotate(0deg);
+          }
+        }
+
+        /* 2. Singularity Flash (White-hot quantum flare bursting at t=0) */
         .ilms-singularity-flash {
           animation: ilms-singularity-anim 0.65s cubic-bezier(0.12, 0.8, 0.32, 1) forwards;
         }
@@ -703,62 +836,62 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
             box-shadow: 0 0 35px #ffffff, 0 0 70px #38bdf8, 0 0 130px #8961D8;
           }
           20% {
-            width: 200px;
-            height: 200px;
+            width: 220px;
+            height: 220px;
             transform: translate(-50%, -50%) scale(1.6);
             opacity: 0.95;
             background: radial-gradient(circle, #ffffff 15%, #38bdf8 65%, transparent 100%);
-            box-shadow: 0 0 80px #ffffff, 0 0 150px #38bdf8, 0 0 220px #8961D8;
+            box-shadow: 0 0 90px #ffffff, 0 0 160px #38bdf8, 0 0 240px #8961D8;
           }
           60% {
-            width: 380px;
-            height: 380px;
+            width: 400px;
+            height: 400px;
             transform: translate(-50%, -50%) scale(2.4);
             opacity: 0.35;
           }
           100% {
-            width: 520px;
-            height: 520px;
+            width: 550px;
+            height: 550px;
             transform: translate(-50%, -50%) scale(3.2);
             opacity: 0;
             box-shadow: none;
           }
         }
 
-        /* 2. Quantum Pop-Out-Of-Nowhere Animation */
+        /* 3. Quantum Pop-Out-Of-Nowhere Animation */
         .ilms-pop-nowhere {
           animation:
-            ilms-pop-out-of-nowhere 0.78s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards,
-            ilms-float 3.6s ease-in-out 0.78s infinite;
+            ilms-pop-out-of-nowhere 0.82s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards,
+            ilms-float 3.6s ease-in-out 0.82s infinite;
         }
 
         @keyframes ilms-pop-out-of-nowhere {
           0% {
-            transform: scale3d(0, 0, 0) translateY(55px) rotate(-24deg);
+            transform: scale3d(0, 0, 0) translateY(65px) rotateZ(-30deg) rotateX(42deg);
             opacity: 0;
-            filter: blur(28px) brightness(3.5);
+            filter: blur(35px) brightness(4) drop-shadow(0 0 50px #38bdf8);
           }
-          32% {
+          26% {
             opacity: 1;
-            filter: blur(6px) brightness(2);
+            filter: blur(8px) brightness(2.5) drop-shadow(0 0 35px #8961D8);
           }
-          64% {
-            transform: scale3d(1.28, 1.28, 1) translateY(-14px) rotate(4.5deg);
+          52% {
+            transform: scale3d(1.36, 1.36, 1.36) translateY(-18px) rotateZ(6deg) rotateX(-12deg);
             opacity: 1;
-            filter: blur(0px) brightness(1.25);
+            filter: blur(0px) brightness(1.35) drop-shadow(0 0 50px #38bdf8);
           }
-          78% {
-            transform: scale3d(0.92, 0.92, 1) translateY(5px) rotate(-1.5deg);
-            filter: brightness(1);
+          70% {
+            transform: scale3d(0.88, 0.88, 0.88) translateY(8px) rotateZ(-2.5deg) rotateX(5deg);
+            filter: brightness(1.1);
           }
-          88% {
-            transform: scale3d(1.06, 1.06, 1) translateY(-2px) rotate(0.8deg);
+          84% {
+            transform: scale3d(1.10, 1.10, 1.10) translateY(-3px) rotateZ(1deg) rotateX(-1.5deg);
           }
-          95% {
-            transform: scale3d(0.98, 0.98, 1) translateY(1px) rotate(-0.3deg);
+          94% {
+            transform: scale3d(0.97, 0.97, 0.97) translateY(1px) rotateZ(-0.4deg);
           }
           100% {
-            transform: scale3d(1, 1, 1) translateY(0px) rotate(0deg);
+            transform: scale3d(1, 1, 1) translateY(0px) rotateZ(0deg) rotateX(0deg);
             opacity: 1;
             filter: blur(0px) brightness(1);
           }
