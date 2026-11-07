@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Sparkles, Volume2, VolumeX, ShieldCheck, Cpu, Zap, RefreshCw } from 'lucide-react';
+import { Sparkles, Volume2, VolumeX, ShieldCheck, Cpu, Zap, RefreshCw, FlaskConical, Activity } from 'lucide-react';
 
 interface AppSplashAnimationProps {
   onComplete?: () => void;
@@ -226,32 +226,32 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
       const isWelcomeBack = mode === 'welcome-back';
       setStatusText(
         isWelcomeBack
-          ? 'Welcome Back • Resuming Laboratory Session...'
-          : 'Initializing Laboratory Operating System...'
+          ? 'Welcome Back • Reconnecting Lab Workstation...'
+          : 'Initializing Multi-Laboratory Operations...'
       );
 
       // Play the previous sound in one unified shot
       soundEngine.playOneShot();
 
-      // Stage 1: Visual Ledger check (520ms)
+      // Stage 1: Visual Inventory check (520ms)
       const t1 = setTimeout(() => {
         setProgress(48);
         setActiveStage(1);
         setStatusText(
           isWelcomeBack
-            ? 'Restoring Encrypted Active State & Ledger...'
-            : 'Mounting Universal Inventory & Equipment Ledger...'
+            ? 'Synchronizing Active Lab Equipment & Chemicals...'
+            : 'Calibrating Lab Apparatus & Universal Inventory...'
         );
       }, 520);
 
-      // Stage 2: Visual Security check (1100ms)
+      // Stage 2: Visual Workstations & Safety check (1100ms)
       const t2 = setTimeout(() => {
         setProgress(82);
         setActiveStage(2);
         setStatusText(
           isWelcomeBack
-            ? 'Revalidating Multi-Laboratory Security Passports...'
-            : 'Synchronizing Multi-Laboratory Security Passports...'
+            ? 'Re-linking Laboratory Workstations & Safety Protocols...'
+            : 'Connecting Department Workstations & Safety Sensors...'
         );
       }, 1100);
 
@@ -261,8 +261,8 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
         setActiveStage(3);
         setStatusText(
           isWelcomeBack
-            ? 'ILMS Lab OS Session Restored • Ready'
-            : 'ILMS Lab OS Online • Ready'
+            ? 'Laboratory Workspace Restored • Ready'
+            : 'All Laboratory Systems Operational • Ready'
         );
       }, 1750);
 
@@ -704,37 +704,46 @@ export const AppSplashAnimation: React.FC<AppSplashAnimationProps> = ({
             isFadingOut ? 'opacity-0 translate-y-3' : 'opacity-100 translate-y-0'
           }`}
         >
-          {/* Dynamic Telemetry Status Badges */}
+          {/* Dynamic Laboratory Telemetry Status Badges */}
           <div className="flex items-center justify-center gap-1.5 mb-4 text-[10px] font-mono">
+            {/* Badge 1: Universal Inventory & Chemicals */}
             <span
-              className={`px-2 py-0.5 rounded-md border flex items-center space-x-1 transition-all ${
+              className={`px-2.5 py-0.5 rounded-md border flex items-center space-x-1.5 transition-all ${
                 activeStage >= 1
                   ? 'bg-purple-900/60 border-purple-400/50 text-purple-200 shadow-[0_0_8px_rgba(168,85,247,0.3)]'
                   : 'bg-slate-900/40 border-slate-700/50 text-slate-500'
               }`}
             >
-              {splashMode === 'welcome-back' ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Cpu className="w-3 h-3" />}
-              <span>{splashMode === 'welcome-back' ? 'SESSION: RESTORED' : 'LEDGER: OK'}</span>
+              {splashMode === 'welcome-back' ? (
+                <RefreshCw className="w-3 h-3 animate-spin text-purple-300" />
+              ) : (
+                <FlaskConical className="w-3 h-3 text-purple-300" />
+              )}
+              <span>{splashMode === 'welcome-back' ? 'INVENTORY: RESTORED' : 'INVENTORY: SYNCED'}</span>
             </span>
+
+            {/* Badge 2: Lab Equipment & Hardware Stations */}
             <span
-              className={`px-2 py-0.5 rounded-md border flex items-center space-x-1 transition-all ${
+              className={`px-2.5 py-0.5 rounded-md border flex items-center space-x-1.5 transition-all ${
                 activeStage >= 2
                   ? 'bg-cyan-900/60 border-cyan-400/50 text-cyan-200 shadow-[0_0_8px_rgba(56,189,248,0.3)]'
                   : 'bg-slate-900/40 border-slate-700/50 text-slate-500'
               }`}
             >
-              <ShieldCheck className="w-3 h-3" />
-              <span>PASSPORT: SECURE</span>
+              <Cpu className="w-3 h-3 text-cyan-300" />
+              <span>EQUIPMENT: READY</span>
             </span>
+
+            {/* Badge 3: Operating System Live */}
             <span
-              className={`px-2 py-0.5 rounded-md border flex items-center space-x-1 transition-all ${
+              className={`px-2.5 py-0.5 rounded-md border flex items-center space-x-1.5 transition-all ${
                 activeStage >= 3
                   ? 'bg-emerald-900/60 border-emerald-400/50 text-emerald-200 shadow-[0_0_8px_rgba(16,185,129,0.3)]'
                   : 'bg-slate-900/40 border-slate-700/50 text-slate-500'
               }`}
             >
-              <Zap className="w-3 h-3" />
-              <span>ONLINE</span>
+              <Activity className="w-3 h-3 text-emerald-300" />
+              <span>LAB OS: ONLINE</span>
             </span>
           </div>
 
