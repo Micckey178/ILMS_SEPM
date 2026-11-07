@@ -166,7 +166,8 @@ export function App() {
         <AppSplashAnimation />
         <Routes>
           <Route path="/welcome" element={<WelcomePage />} />
-          <Route path="/login" element={<LoginPage />} />
+          <Route path="/login" element={<WelcomePage />} />
+          <Route path="/auth" element={<LoginPage />} />
           <Route path="/*" element={<AppLayout />} />
         </Routes>
         {/* Interactive Companion Companion throughout entire ILMS */}
